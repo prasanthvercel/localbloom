@@ -32,16 +32,26 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Redirect to account setup if user is new and hasn't set up their profile
+  // Redirect to account setup if user is logged in but profile is incomplete.
+  // Do not redirect for the account page itself.
   if (user && !request.nextUrl.pathname.startsWith('/account')) {
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('full_name')
+      .select('full_name, address, city, state, pincode, mobile_number')
       .eq('id', user.id)
       .single();
 
-    // Redirect if profile is missing, incomplete, or if there's a "not found" error.
-    if ((!profile || !profile.full_name) && (error?.code === 'PGRST116' || !error)) {
+    // PGRST116 means no row was found, which is expected for a new user.
+    // We redirect if there's no profile or if any of the essential fields are empty.
+    const isProfileIncomplete = !profile || 
+                                !profile.full_name ||
+                                !profile.address ||
+                                !profile.city ||
+                                !profile.state ||
+                                !profile.pincode ||
+                                !profile.mobile_number;
+
+    if (isProfileIncomplete && (error?.code === 'PGRST116' || !error)) {
        const url = request.nextUrl.clone()
        url.pathname = '/account'
        return NextResponse.redirect(url)
