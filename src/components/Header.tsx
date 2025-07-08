@@ -23,7 +23,7 @@ export function Header() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
-       if (_event === 'SIGNED_OUT') {
+       if (_event === 'SIGNED_IN' || _event === 'SIGNED_OUT') {
         router.refresh();
       }
     });

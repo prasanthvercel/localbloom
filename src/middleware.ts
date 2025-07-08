@@ -40,7 +40,8 @@ export async function middleware(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    if ((!profile || !profile.full_name) && !error ) {
+    // Redirect if profile is missing, incomplete, or if there's a "not found" error.
+    if ((!profile || !profile.full_name) && (error?.code === 'PGRST116' || !error)) {
        const url = request.nextUrl.clone()
        url.pathname = '/account'
        return NextResponse.redirect(url)
