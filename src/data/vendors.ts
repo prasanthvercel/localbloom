@@ -29,6 +29,7 @@ export const vendors: Vendor[] = [
       { name: 'Organic Apples', price: 3.99, image: 'https://placehold.co/100x100.png', lowPrice: true },
       { name: 'Heirloom Tomatoes', price: 4.50, image: 'https://placehold.co/100x100.png' },
       { name: 'Fresh Strawberries (1lb)', price: 5.00, image: 'https://placehold.co/100x100.png', discount: '15% off' },
+      { name: 'Organic Rice (1kg)', price: 6.50, image: 'https://placehold.co/100x100.png' },
     ],
     hours: [
       { day: 'Saturday', time: '8:00 AM - 2:00 PM' },
@@ -114,5 +115,20 @@ export const vendors: Vendor[] = [
     hours: [{ day: 'Saturday', time: '9:00 AM - 2:00 PM' }],
     location: { lat: 30, lng: 55 },
     rating: 4.8,
+  },
+  {
+    id: 'pantry-staples',
+    name: 'Pantry Staples Co.',
+    category: 'Food',
+    image: 'https://placehold.co/400x250.png',
+    description: 'All your essential pantry needs, from grains to spices, at the best prices.',
+    products: [
+        { name: 'Organic Rice (1kg)', price: 5.99, image: 'https://placehold.co/100x100.png' },
+        { name: 'All-Purpose Flour (2kg)', price: 4.00, image: 'https://placehold.co/100x100.png' },
+        { name: 'Canned Chickpeas', price: 1.50, image: 'https://placehold.co/100x100.png', lowPrice: true },
+    ],
+    hours: [{ day: 'Saturday', time: '9:00 AM - 3:00 PM' }],
+    location: { lat: 50, lng: 60 },
+    rating: 4.5,
   }
 ];

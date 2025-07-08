@@ -2,89 +2,94 @@
 
 import React, { useState, useMemo } from 'react';
 import { Header } from '@/components/Header';
-import { VendorCard } from '@/components/VendorCard';
-import { MapPlaceholder } from '@/components/MapPlaceholder';
-import { vendors as allVendors, type Vendor } from '@/data/vendors';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { vendors as allVendors } from '@/data/vendors';
 import { AnimatePresence, motion } from 'framer-motion';
-import { SearchX } from 'lucide-react';
-
-const categories = ['All', 'Produce', 'Bakery', 'Crafts', 'Food'];
+import { SearchX, ShoppingCart } from 'lucide-react';
+import { ProductResultCard, type ProductWithVendor } from '@/components/ProductResultCard';
 
 export function HomePage() {
-  const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredVendors = useMemo(() => {
-    let vendors = allVendors;
-    
-    if (activeCategory !== 'All') {
-      vendors = vendors.filter(vendor => vendor.category === activeCategory);
+  const foundProducts = useMemo((): ProductWithVendor[] => {
+    if (searchQuery.trim() === '') {
+      return [];
     }
 
-    if (searchQuery.trim() !== '') {
-      const lowercasedQuery = searchQuery.toLowerCase();
-      vendors = vendors.filter(vendor =>
-        vendor.name.toLowerCase().includes(lowercasedQuery) ||
-        vendor.products.some(product =>
-          product.name.toLowerCase().includes(lowercasedQuery)
-        )
-      );
+    const lowercasedQuery = searchQuery.toLowerCase();
+    const results: ProductWithVendor[] = [];
+
+    allVendors.forEach(vendor => {
+      vendor.products.forEach(product => {
+        if (product.name.toLowerCase().includes(lowercasedQuery)) {
+          results.push({
+            ...product,
+            vendorId: vendor.id,
+            vendorName: vendor.name,
+            vendorRating: vendor.rating,
+          });
+        }
+      });
+    });
+
+    results.sort((a, b) => a.price - b.price);
+
+    if (results.length > 0) {
+      const lowestPrice = results[0].price;
+      results.forEach(r => {
+        r.lowPrice = r.price === lowestPrice;
+      });
     }
 
-    return vendors;
-  }, [activeCategory, searchQuery]);
+    return results;
+  }, [searchQuery]);
+
+  const hasSearched = searchQuery.trim() !== '';
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-secondary/30">
       <Header searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground mb-4 font-headline">
-              Welcome to LocalBloom
+        <div className="max-w-3xl mx-auto">
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground text-center mb-2 font-headline">
+                Find the Best Local Prices
             </h1>
-            <p className="text-muted-foreground mb-6">Discover the best local vendors in your area.</p>
-
-            <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full mb-6">
-              <TabsList className="grid w-full grid-cols-5 bg-secondary p-1 h-auto">
-                {categories.map(category => (
-                  <TabsTrigger key={category} value={category} className="text-xs sm:text-sm">
-                    {category}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+            <p className="text-muted-foreground text-center mb-8 max-w-xl mx-auto">
+                Search for any product, and we'll show you who sells it cheapest. Your smart way to shop local and save.
+            </p>
             
-            {filteredVendors.length > 0 ? (
-              <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                <AnimatePresence>
-                  {filteredVendors.map((vendor) => (
-                     <motion.div
-                      key={vendor.id}
-                      layout
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <VendorCard vendor={vendor} />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </motion.div>
+            {hasSearched ? (
+              foundProducts.length > 0 ? (
+                <motion.div layout className="grid grid-cols-1 gap-4 mt-8">
+                  <h2 className="text-lg font-semibold">Found {foundProducts.length} result{foundProducts.length > 1 ? 's' : ''} for "{searchQuery}"</h2>
+                  <AnimatePresence>
+                    {foundProducts.map((item, index) => (
+                      <motion.div
+                        key={`${item.vendorId}-${item.name}-${index}`}
+                        layout
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                      >
+                        <ProductResultCard item={item} />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
+              ) : (
+                <div className="text-center py-16">
+                  <SearchX className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h2 className="mt-4 text-xl font-semibold text-foreground">No Products Found</h2>
+                  <p className="text-muted-foreground mt-2">We couldn't find "{searchQuery}" at any local vendors.</p>
+                </div>
+              )
             ) : (
-              <div className="text-center py-16">
-                <SearchX className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h2 className="mt-4 text-xl font-semibold text-foreground">No Vendors Found</h2>
-                <p className="text-muted-foreground mt-2">Try adjusting your search or category filters.</p>
-              </div>
+                 <div className="text-center py-16">
+                    <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h2 className="mt-4 text-xl font-semibold text-foreground">Start Your Search</h2>
+                    <p className="text-muted-foreground mt-2">Type a product name in the search bar above to begin.</p>
+                </div>
             )}
-          </div>
-
-          <aside className="lg:col-span-1 lg:sticky top-8 self-start">
-            <MapPlaceholder vendors={filteredVendors} />
-          </aside>
         </div>
       </main>
     </div>

@@ -34,7 +34,7 @@ export default function VendorPage({ params }: { params: { vendorId: string } })
         <div className="mb-6">
           <Link href="/" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to all vendors
+            Back to search
           </Link>
         </div>
 
@@ -134,7 +134,7 @@ function ProductCard({ product }: { product: Product }) {
           {product.lowPrice && (
             <Badge variant="outline" className="border-green-500 text-green-600 bg-green-500/10 py-0.5 px-1.5 text-xs">
               <Sparkles className="h-3 w-3 mr-1" />
-              Low Price
+              Best Price
             </Badge>
           )}
         </div>
