@@ -23,16 +23,21 @@ export async function addExpenseFromProduct(formData: FormData): Promise<AddExpe
   }
 
   const itemName = formData.get('itemName') as string;
-  const amount = parseFloat(formData.get('amount') as string);
+  const unitPrice = parseFloat(formData.get('amount') as string);
+  const quantity = parseInt(formData.get('quantity') as string, 10);
   
-  if (!itemName || isNaN(amount)) {
+  if (!itemName || isNaN(unitPrice) || isNaN(quantity) || quantity <= 0) {
     return { success: false, error: 'Invalid item data.' };
   }
 
+  const totalAmount = unitPrice * quantity;
+  const finalItemName = quantity > 1 ? `${itemName} (x${quantity})` : itemName;
+
+
   const { error } = await supabase.from('expenses').insert({
     user_id: user.id,
-    item_name: itemName,
-    amount: amount,
+    item_name: finalItemName,
+    amount: totalAmount,
     expense_date: format(new Date(), 'yyyy-MM-dd'),
   });
 
@@ -42,5 +47,5 @@ export async function addExpenseFromProduct(formData: FormData): Promise<AddExpe
   }
 
   revalidatePath('/calculator');
-  return { success: true, message: `${itemName} has been added to your expense list.` };
+  return { success: true, message: `${finalItemName} has been added to your expense list.` };
 }
