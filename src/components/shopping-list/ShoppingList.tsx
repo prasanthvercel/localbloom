@@ -3,7 +3,7 @@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Trash2, ChevronDown } from 'lucide-react';
-import { useTransition, useState, useMemo } from 'react';
+import { useTransition, useState, useMemo, useEffect } from 'react';
 import { markItemAsBought, deleteShoppingListItem } from '@/app/shopping-list/actions';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -18,11 +18,25 @@ interface ShoppingListProps {
 export function ShoppingList({ items }: ShoppingListProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   const total = useMemo(() => {
     return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }, [items]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // If the list is open and the user scrolls down, close it.
+      if (isOpen && window.scrollY > 0) {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [isOpen]); // Rerun the effect if `isOpen` changes.
 
   const handleMarkAsBought = (id: number) => {
     startTransition(async () => {
