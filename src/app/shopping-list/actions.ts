@@ -22,13 +22,14 @@ export async function addItemToShoppingList(formData: FormData) {
     return { success: false, error: 'Invalid item data.' };
   }
 
-  // Check if the item already exists in the shopping list
+  // Check if an un-bought item already exists in the shopping list
   const { data: existingItem, error: fetchError } = await supabase
     .from('shopping_list_items')
     .select('id, quantity')
     .eq('user_id', user.id)
     .eq('product_name', productName)
     .eq('vendor_name', vendorName)
+    .eq('bought', false) // Only look for items that haven't been bought yet
     .single();
 
   if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116: row not found
@@ -37,7 +38,7 @@ export async function addItemToShoppingList(formData: FormData) {
   }
   
   if (existingItem) {
-    // If item exists, update the quantity
+    // If an un-bought item exists, update its quantity
     const { error: updateError } = await supabase
       .from('shopping_list_items')
       .update({ quantity: existingItem.quantity + quantity })
@@ -50,7 +51,7 @@ export async function addItemToShoppingList(formData: FormData) {
     }
 
   } else {
-    // If item does not exist, insert a new one
+    // If item does not exist or the existing one is already bought, insert a new one
     const { error: insertError } = await supabase.from('shopping_list_items').insert({
       user_id: user.id,
       product_name: productName,
