@@ -1,6 +1,7 @@
 import { Header } from '@/components/Header';
 import { MapPlaceholder } from '@/components/MapPlaceholder';
 import { VendorCard } from '@/components/VendorCard';
+import { ViewToggle } from '@/components/ViewToggle';
 import { vendors as allVendors } from '@/data/vendors';
 
 export default function MarketplacePage() {
@@ -15,6 +16,9 @@ export default function MarketplacePage() {
                     <p className="text-muted-foreground text-center mb-8 max-w-2xl mx-auto">
                         Discover all the talented local vendors and what they have to offer.
                     </p>
+
+                    <ViewToggle />
+                    
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-2">
                             <h2 className="text-2xl font-bold tracking-tight text-foreground mb-4">All Vendors</h2>

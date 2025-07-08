@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Home' },
-  { href: '/marketplace', label: 'Marketplace' },
   { href: '/calculator', label: 'Calculator' },
 ];
 

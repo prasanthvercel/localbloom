@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Search as SearchIcon, SearchX } from 'lucide-react';
 import { ProductResultCard, type ProductWithVendor } from '@/components/ProductResultCard';
 import { Input } from '@/components/ui/input';
+import { ViewToggle } from '@/components/ViewToggle';
 
 export function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,6 +58,8 @@ export function HomePage() {
           <p className="text-muted-foreground text-center mb-8 max-w-2xl mx-auto">
             Your one-stop destination to discover local vendors and find the best prices on fresh products.
           </p>
+          
+          <ViewToggle />
 
             <div className="max-w-3xl mx-auto">
               <div className="relative w-full mb-8">
