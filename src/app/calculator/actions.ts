@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { format } from 'date-fns';
+import { cookies } from 'next/headers';
 
 type AddExpenseResult = {
   success: boolean;
@@ -11,7 +12,8 @@ type AddExpenseResult = {
 };
 
 export async function addExpenseFromProduct(formData: FormData): Promise<AddExpenseResult> {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
