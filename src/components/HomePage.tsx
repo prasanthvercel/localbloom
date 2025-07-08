@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { vendors as allVendors } from '@/data/vendors';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Compass, Search as SearchIcon, SearchX, ShoppingCart } from 'lucide-react';
+import { Compass, Search as SearchIcon, SearchX } from 'lucide-react';
 import { ProductResultCard, type ProductWithVendor } from '@/components/ProductResultCard';
 import { VendorCard } from '@/components/VendorCard';
 import { MapPlaceholder } from '@/components/MapPlaceholder';
@@ -15,22 +15,20 @@ export function HomePage() {
   const [view, setView] = useState<'products' | 'marketplace'>('products');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const foundProducts = useMemo((): ProductWithVendor[] => {
-    if (searchQuery.trim() === '') {
-      return [];
-    }
-
-    const lowercasedQuery = searchQuery.toLowerCase();
+  const productsToShow = useMemo((): ProductWithVendor[] => {
+    const lowercasedQuery = searchQuery.toLowerCase().trim();
     const results: ProductWithVendor[] = [];
 
     allVendors.forEach(vendor => {
       vendor.products.forEach(product => {
-        if (product.name.toLowerCase().includes(lowercasedQuery)) {
+        const productName = product.name.toLowerCase();
+        if (lowercasedQuery === '' || productName.includes(lowercasedQuery)) {
           results.push({
             ...product,
             vendorId: vendor.id,
             vendorName: vendor.name,
             vendorRating: vendor.rating,
+            lowPrice: false, // Default to false
           });
         }
       });
@@ -38,10 +36,12 @@ export function HomePage() {
 
     results.sort((a, b) => a.price - b.price);
 
-    if (results.length > 0) {
+    if (lowercasedQuery !== '' && results.length > 0) {
       const lowestPrice = results[0].price;
       results.forEach(r => {
-        r.lowPrice = r.price === lowestPrice;
+        if (r.price === lowestPrice) {
+          r.lowPrice = true;
+        }
       });
     }
 
@@ -86,38 +86,34 @@ export function HomePage() {
                     />
                 </div>
                 
-                {hasSearched ? (
-                  foundProducts.length > 0 ? (
-                    <motion.div layout className="space-y-4">
-                      <h2 className="text-lg font-semibold text-center">Found {foundProducts.length} result{foundProducts.length > 1 ? 's' : ''} for "{searchQuery}"</h2>
-                      <AnimatePresence>
-                        {foundProducts.map((item, index) => (
-                          <motion.div
-                            key={`${item.vendorId}-${item.name}-${index}`}
-                            layout
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.3, delay: index * 0.05 }}
-                          >
-                            <ProductResultCard item={item} />
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
-                    </motion.div>
-                  ) : (
-                    <div className="text-center py-16 bg-card rounded-lg shadow-sm">
-                      <SearchX className="mx-auto h-12 w-12 text-muted-foreground" />
-                      <h2 className="mt-4 text-xl font-semibold text-foreground">No Products Found</h2>
-                      <p className="text-muted-foreground mt-2">We couldn't find "{searchQuery}" at any local vendors.</p>
-                    </div>
-                  )
+                {productsToShow.length > 0 ? (
+                  <motion.div layout className="space-y-4">
+                     {hasSearched ? (
+                        <h2 className="text-lg font-semibold text-center">Found {productsToShow.length} result{productsToShow.length > 1 ? 's' : ''} for "{searchQuery}"</h2>
+                      ) : (
+                        <h2 className="text-2xl font-bold tracking-tight text-foreground mb-4 text-center">All Products</h2>
+                      )}
+                    <AnimatePresence>
+                      {productsToShow.map((item, index) => (
+                        <motion.div
+                          key={`${item.vendorId}-${item.name}-${index}`}
+                          layout
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ duration: 0.3, delay: index * 0.05 }}
+                        >
+                          <ProductResultCard item={item} />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </motion.div>
                 ) : (
-                    <div className="text-center py-16 bg-card rounded-lg shadow-sm">
-                        <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground" />
-                        <h2 className="mt-4 text-xl font-semibold text-foreground">Start Your Search</h2>
-                        <p className="text-muted-foreground mt-2">Type a product name in the search bar above to begin.</p>
-                    </div>
+                  <div className="text-center py-16 bg-card rounded-lg shadow-sm">
+                    <SearchX className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h2 className="mt-4 text-xl font-semibold text-foreground">No Products Found</h2>
+                    <p className="text-muted-foreground mt-2">We couldn't find "{searchQuery}" at any local vendors.</p>
+                  </div>
                 )}
               </div>
             </TabsContent>

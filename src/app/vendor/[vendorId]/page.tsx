@@ -24,7 +24,7 @@ function getVendor(vendorId: string) {
   return vendor;
 }
 
-export default function VendorPage({ params }: { params: { vendorId: string } }) {
+export default async function VendorPage({ params }: { params: { vendorId: string } }) {
   const vendor = getVendor(params.vendorId);
 
   return (
