@@ -29,8 +29,8 @@ export default async function CalculatorPage() {
     .lte('expense_date', endDate)
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching expenses:', error);
+  if (error && error.message) {
+    console.error('Error fetching expenses:', error.message);
     // Continue with an empty array if there's an error
   }
   
