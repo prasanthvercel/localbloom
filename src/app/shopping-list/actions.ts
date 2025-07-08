@@ -41,11 +41,12 @@ export async function addItemToShoppingList(formData: FormData) {
     const { error: updateError } = await supabase
       .from('shopping_list_items')
       .update({ quantity: existingItem.quantity + quantity })
-      .eq('id', existingItem.id);
+      .eq('id', existingItem.id)
+      .eq('user_id', user.id);
 
     if (updateError) {
         console.error('Error updating quantity:', updateError);
-        return { success: false, error: 'Could not update item quantity.' };
+        return { success: false, error: `Could not update item quantity: ${updateError.message}` };
     }
 
   } else {
@@ -62,7 +63,7 @@ export async function addItemToShoppingList(formData: FormData) {
 
     if (insertError) {
       console.error('Error adding to shopping list:', insertError);
-      return { success: false, error: 'Could not add item to your list.' };
+      return { success: false, error: `Could not add item to your list: ${insertError.message}` };
     }
   }
 
@@ -85,7 +86,7 @@ export async function toggleItemBoughtStatus(itemId: number, bought: boolean) {
 
   if (error) {
     console.error('Error updating item status:', error);
-    return { success: false, error: 'Could not update item status.' };
+    return { success: false, error: `Could not update item status: ${error.message}` };
   }
   
   revalidatePath('/');
@@ -133,14 +134,15 @@ export async function moveItemsToExpenses(itemIds: number[]) {
 
   if (insertError) {
     console.error('Error adding to expenses:', insertError);
-    return { success: false, error: 'Could not add items to expenses.' };
+    return { success: false, error: `Could not add items to expenses: ${insertError.message}` };
   }
 
   // 4. Delete from shopping list table
   const { error: deleteError } = await supabase
     .from('shopping_list_items')
     .delete()
-    .in('id', itemIds);
+    .in('id', itemIds)
+    .eq('user_id', user.id);
 
   if (deleteError) {
     console.error('Error deleting from shopping list:', deleteError);
@@ -167,7 +169,7 @@ export async function deleteShoppingListItem(itemId: number) {
     
     if (error) {
         console.error('Error deleting shopping item:', error);
-        return { success: false, error: 'Could not delete item.' };
+        return { success: false, error: `Could not delete item: ${error.message}` };
     }
     
     revalidatePath('/');
