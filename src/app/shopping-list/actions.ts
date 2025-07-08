@@ -57,6 +57,7 @@ export async function addItemToShoppingList(formData: FormData) {
       price,
       quantity,
       image_url: imageUrl,
+      bought: false,
     });
 
     if (insertError) {
@@ -68,6 +69,29 @@ export async function addItemToShoppingList(formData: FormData) {
   revalidatePath('/');
   return { success: true, message: `${productName} added to your shopping list!` };
 }
+
+export async function toggleItemBoughtStatus(itemId: number, bought: boolean) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: 'You must be logged in.' };
+
+  const { error } = await supabase
+    .from('shopping_list_items')
+    .update({ bought })
+    .eq('id', itemId)
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('Error updating item status:', error);
+    return { success: false, error: 'Could not update item status.' };
+  }
+  
+  revalidatePath('/');
+  return { success: true };
+}
+
 
 export async function moveItemsToExpenses(itemIds: number[]) {
   const cookieStore = cookies();
@@ -125,7 +149,7 @@ export async function moveItemsToExpenses(itemIds: number[]) {
   
   revalidatePath('/');
   revalidatePath('/calculator');
-  return { success: true, message: 'Items marked as bought and moved to expenses!' };
+  return { success: true, message: `${itemIds.length} item(s) moved to expenses!` };
 }
 
 export async function deleteShoppingListItem(itemId: number) {

@@ -4,7 +4,7 @@
 import { Button } from '@/components/ui/button';
 import { Trash2, ChevronDown, CheckCheck } from 'lucide-react';
 import { useTransition, useState, useMemo, useEffect } from 'react';
-import { moveItemsToExpenses, deleteShoppingListItem } from '@/app/shopping-list/actions';
+import { moveItemsToExpenses, deleteShoppingListItem, toggleItemBoughtStatus } from '@/app/shopping-list/actions';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,16 +22,17 @@ export function ShoppingList({ items }: ShoppingListProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
-  const [boughtItemIds, setBoughtItemIds] = useState<Set<number>>(new Set());
-
-  const { boughtTotal, remainingTotal, grandTotal } = useMemo(() => {
+  
+  const { boughtTotal, remainingTotal, grandTotal, hasBoughtItems } = useMemo(() => {
     let bought = 0;
     let remaining = 0;
+    let anyBought = false;
     
     items.forEach(item => {
         const itemTotal = item.price * item.quantity;
-        if (boughtItemIds.has(item.id)) {
+        if (item.bought) {
             bought += itemTotal;
+            anyBought = true;
         } else {
             remaining += itemTotal;
         }
@@ -41,8 +42,9 @@ export function ShoppingList({ items }: ShoppingListProps) {
         boughtTotal: bought,
         remainingTotal: remaining,
         grandTotal: bought + remaining,
+        hasBoughtItems: anyBought
     };
-  }, [items, boughtItemIds]);
+  }, [items]);
 
   useEffect(() => {
     const handleScroll = (event: Event) => {
@@ -56,28 +58,19 @@ export function ShoppingList({ items }: ShoppingListProps) {
       window.removeEventListener('scroll', handleScroll, true);
     };
   }, [isOpen]);
-  
-  useEffect(() => {
-    // Clear bought items if the main item list changes
-    setBoughtItemIds(new Set());
-  }, [items]);
 
-
-  const handleToggleBought = (itemId: number) => {
-    setBoughtItemIds(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(itemId)) {
-            newSet.delete(itemId);
-        } else {
-            newSet.add(itemId);
+  const handleToggleBought = (itemId: number, currentStatus: boolean) => {
+    startTransition(async () => {
+        const result = await toggleItemBoughtStatus(itemId, !currentStatus);
+        if (result?.error) {
+            toast({ variant: 'destructive', title: 'Error', description: result.error });
         }
-        return newSet;
     });
   };
 
-  const handleConfirmAndAddToExpenses = () => {
+  const handleMoveBoughtItemsToExpenses = () => {
     startTransition(async () => {
-      const idsToMove = Array.from(boughtItemIds);
+      const idsToMove = items.filter(item => item.bought).map(item => item.id);
       if (idsToMove.length === 0) {
         toast({ variant: 'destructive', title: 'No items selected', description: 'Mark items as "bought" first.' });
         return;
@@ -101,8 +94,6 @@ export function ShoppingList({ items }: ShoppingListProps) {
       }
     });
   };
-
-  const allItemsMarked = items.length > 0 && boughtItemIds.size === items.length;
 
   return (
     <Card className="mb-8 shadow-lg border-primary/20 overflow-hidden">
@@ -146,17 +137,17 @@ export function ShoppingList({ items }: ShoppingListProps) {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleToggleBought(item.id)}
+                        onClick={() => handleToggleBought(item.id, item.bought)}
                         disabled={isPending}
-                        aria-label={`Mark ${item.product_name} as bought`}
+                        aria-label={`Mark ${item.product_name} as ${item.bought ? 'to buy' : 'bought'}`}
                         className={cn(
                           'w-24 transition-all',
-                          boughtItemIds.has(item.id)
+                          item.bought
                             ? 'bg-green-500 hover:bg-green-600 text-white border-green-600'
                             : 'bg-yellow-400 hover:bg-yellow-500 text-white border-yellow-500'
                         )}
                       >
-                       {boughtItemIds.has(item.id) ? 'Bought' : 'To Buy'}
+                       {item.bought ? 'Bought' : 'To Buy'}
                       </Button>
                       <Image
                         src={item.image_url}
@@ -197,11 +188,11 @@ export function ShoppingList({ items }: ShoppingListProps) {
             <Separator className="my-2" />
             <CardFooter className="pt-4 flex justify-end">
                 <Button 
-                    onClick={handleConfirmAndAddToExpenses} 
-                    disabled={isPending || !allItemsMarked}
+                    onClick={handleMoveBoughtItemsToExpenses} 
+                    disabled={isPending || !hasBoughtItems}
                 >
                     <CheckCheck className="mr-2 h-4 w-4" />
-                    Confirm & Add All to Expenses
+                    Move Bought Items to Expenses
                 </Button>
             </CardFooter>
             </>

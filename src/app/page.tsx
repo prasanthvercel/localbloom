@@ -10,6 +10,7 @@ export type ShoppingListItem = {
   price: number;
   quantity: number;
   image_url: string;
+  bought: boolean;
 };
 
 export default async function Home() {
