@@ -21,74 +21,111 @@ export async function addItemToShoppingList(formData: FormData) {
   if (!productName || isNaN(price) || isNaN(quantity) || quantity <= 0) {
     return { success: false, error: 'Invalid item data.' };
   }
-  
-  const { error } = await supabase.from('shopping_list_items').insert({
-    user_id: user.id,
-    product_name: productName,
-    vendor_name: vendorName,
-    price,
-    quantity,
-    image_url: imageUrl,
-  });
 
-  if (error) {
-    console.error('Error adding to shopping list:', error);
-    return { success: false, error: 'Could not add item to your list.' };
+  // Check if the item already exists in the shopping list
+  const { data: existingItem, error: fetchError } = await supabase
+    .from('shopping_list_items')
+    .select('id, quantity')
+    .eq('user_id', user.id)
+    .eq('product_name', productName)
+    .eq('vendor_name', vendorName)
+    .single();
+
+  if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116: row not found
+      console.error('Error fetching existing item:', fetchError);
+      return { success: false, error: 'Could not check your shopping list.' };
+  }
+  
+  if (existingItem) {
+    // If item exists, update the quantity
+    const { error: updateError } = await supabase
+      .from('shopping_list_items')
+      .update({ quantity: existingItem.quantity + quantity })
+      .eq('id', existingItem.id);
+
+    if (updateError) {
+        console.error('Error updating quantity:', updateError);
+        return { success: false, error: 'Could not update item quantity.' };
+    }
+
+  } else {
+    // If item does not exist, insert a new one
+    const { error: insertError } = await supabase.from('shopping_list_items').insert({
+      user_id: user.id,
+      product_name: productName,
+      vendor_name: vendorName,
+      price,
+      quantity,
+      image_url: imageUrl,
+    });
+
+    if (insertError) {
+      console.error('Error adding to shopping list:', insertError);
+      return { success: false, error: 'Could not add item to your list.' };
+    }
   }
 
   revalidatePath('/');
   return { success: true, message: `${productName} added to your shopping list!` };
 }
 
-export async function markItemAsBought(itemId: number) {
+export async function moveItemsToExpenses(itemIds: number[]) {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return { success: false, error: 'You must be logged in.' };
-
-  // 1. Get the shopping list item
-  const { data: item, error: fetchError } = await supabase
-    .from('shopping_list_items')
-    .select('*')
-    .eq('id', itemId)
-    .eq('user_id', user.id)
-    .single();
-    
-  if (fetchError || !item) {
-    console.error('Error fetching shopping item:', fetchError);
-    return { success: false, error: 'Could not find the item to mark as bought.' };
+  if (!itemIds || itemIds.length === 0) {
+    return { success: false, error: 'No items selected to move.' };
   }
 
-  // 2. Add to expenses table
-  const totalAmount = item.price * item.quantity;
-  const finalItemName = item.quantity > 1 ? `${item.product_name} (x${item.quantity})` : item.product_name;
+  // 1. Get all the shopping list items to be moved
+  const { data: items, error: fetchError } = await supabase
+    .from('shopping_list_items')
+    .select('*')
+    .in('id', itemIds)
+    .eq('user_id', user.id);
+    
+  if (fetchError || !items || items.length === 0) {
+    console.error('Error fetching shopping items:', fetchError);
+    return { success: false, error: 'Could not find the items to move.' };
+  }
 
-  const { error: insertError } = await supabase.from('expenses').insert({
-    user_id: user.id,
-    item_name: finalItemName,
-    amount: totalAmount,
-    expense_date: format(new Date(), 'yyyy-MM-dd'),
+  // 2. Prepare them for the expenses table
+  const expenseDate = format(new Date(), 'yyyy-MM-dd');
+  const expensesToInsert = items.map(item => {
+    const totalAmount = item.price * item.quantity;
+    const finalItemName = item.quantity > 1 ? `${item.product_name} (x${item.quantity})` : item.product_name;
+    return {
+      user_id: user.id,
+      item_name: finalItemName,
+      amount: totalAmount,
+      expense_date: expenseDate,
+    };
   });
+
+  // 3. Add to expenses table
+  const { error: insertError } = await supabase.from('expenses').insert(expensesToInsert);
 
   if (insertError) {
     console.error('Error adding to expenses:', insertError);
-    return { success: false, error: 'Could not add item to expenses.' };
+    return { success: false, error: 'Could not add items to expenses.' };
   }
 
-  // 3. Delete from shopping list table
+  // 4. Delete from shopping list table
   const { error: deleteError } = await supabase
     .from('shopping_list_items')
     .delete()
-    .eq('id', itemId);
+    .in('id', itemIds);
 
   if (deleteError) {
     console.error('Error deleting from shopping list:', deleteError);
+    // Don't fail the whole operation, but log the error. The items are in expenses now.
   }
   
   revalidatePath('/');
   revalidatePath('/calculator');
-  return { success: true, message: 'Item marked as bought and moved to expenses!' };
+  return { success: true, message: 'Items marked as bought and moved to expenses!' };
 }
 
 export async function deleteShoppingListItem(itemId: number) {

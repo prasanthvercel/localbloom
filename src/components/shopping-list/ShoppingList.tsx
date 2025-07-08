@@ -1,17 +1,18 @@
 
 'use client';
 
-import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Trash2, ChevronDown } from 'lucide-react';
+import { Trash2, ChevronDown, CheckCheck } from 'lucide-react';
 import { useTransition, useState, useMemo, useEffect } from 'react';
-import { markItemAsBought, deleteShoppingListItem } from '@/app/shopping-list/actions';
+import { moveItemsToExpenses, deleteShoppingListItem } from '@/app/shopping-list/actions';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { ShoppingListItem } from '@/app/page';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { Separator } from '../ui/separator';
 
 interface ShoppingListProps {
   items: ShoppingListItem[];
@@ -21,6 +22,7 @@ export function ShoppingList({ items }: ShoppingListProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const [boughtItemIds, setBoughtItemIds] = useState<Set<number>>(new Set());
 
   const total = useMemo(() => {
     return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -28,22 +30,44 @@ export function ShoppingList({ items }: ShoppingListProps) {
 
   useEffect(() => {
     const handleScroll = (event: Event) => {
-        // Only collapse if the scroll event is on the main window, not within another scrollable element
         if (event.target === document && isOpen && window.scrollY > 0) {
             setIsOpen(false);
         }
     };
 
-    window.addEventListener('scroll', handleScroll, true); // Use capture phase
+    window.addEventListener('scroll', handleScroll, true);
     return () => {
       window.removeEventListener('scroll', handleScroll, true);
     };
   }, [isOpen]);
+  
+  useEffect(() => {
+    // Clear bought items if the main item list changes
+    setBoughtItemIds(new Set());
+  }, [items]);
 
-  const handleMarkAsBought = (id: number) => {
+
+  const handleToggleBought = (itemId: number) => {
+    setBoughtItemIds(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(itemId)) {
+            newSet.delete(itemId);
+        } else {
+            newSet.add(itemId);
+        }
+        return newSet;
+    });
+  };
+
+  const handleConfirmAndAddToExpenses = () => {
     startTransition(async () => {
-      const result = await markItemAsBought(id);
-      if (result?.error) {
+      const idsToMove = Array.from(boughtItemIds);
+      if (idsToMove.length === 0) {
+        toast({ variant: 'destructive', title: 'No items selected', description: 'Mark items as "bought" first.' });
+        return;
+      }
+      const result = await moveItemsToExpenses(idsToMove);
+       if (result?.error) {
         toast({ variant: 'destructive', title: 'Error', description: result.error });
       } else {
         toast({ title: 'Success!', description: result.message });
@@ -61,6 +85,8 @@ export function ShoppingList({ items }: ShoppingListProps) {
       }
     });
   };
+
+  const allItemsMarked = items.length > 0 && boughtItemIds.size === items.length;
 
   return (
     <Card className="mb-8 shadow-lg border-primary/20 overflow-hidden">
@@ -92,15 +118,23 @@ export function ShoppingList({ items }: ShoppingListProps) {
                   {items.map((item) => (
                     <li
                       key={item.id}
-                      className="flex items-center gap-4 p-2 -ml-2 rounded-lg transition-colors hover:bg-muted/50"
+                      className="flex items-center gap-3 p-2 -ml-2 rounded-lg transition-colors hover:bg-muted/50"
                     >
-                      <Checkbox
-                        id={`item-${item.id}`}
-                        onCheckedChange={() => handleMarkAsBought(item.id)}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleToggleBought(item.id)}
                         disabled={isPending}
                         aria-label={`Mark ${item.product_name} as bought`}
-                        className="h-5 w-5"
-                      />
+                        className={cn(
+                          'w-24 transition-all',
+                          boughtItemIds.has(item.id)
+                            ? 'bg-green-500 hover:bg-green-600 text-white border-green-600'
+                            : 'bg-yellow-400 hover:bg-yellow-500 text-white border-yellow-500'
+                        )}
+                      >
+                       {boughtItemIds.has(item.id) ? 'Bought' : 'To Buy'}
+                      </Button>
                       <Image
                         src={item.image_url}
                         alt={item.product_name}
@@ -111,15 +145,10 @@ export function ShoppingList({ items }: ShoppingListProps) {
                       />
                       <div className="flex-grow">
                         <div className="font-semibold text-foreground">
-                          {item.product_name}{' '}
-                          {item.quantity > 1 && (
-                            <span className="text-muted-foreground font-normal text-sm">
-                              (x{item.quantity})
-                            </span>
-                          )}
+                          {item.product_name}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          from {item.vendor_name}
+                          {item.quantity} x ${item.price.toFixed(2)} from {item.vendor_name}
                         </div>
                       </div>
                       <div className="font-bold text-lg text-primary">
@@ -140,6 +169,20 @@ export function ShoppingList({ items }: ShoppingListProps) {
                 </ul>
             </ScrollArea>
           </CardContent>
+          {items.length > 0 && (
+            <>
+            <Separator className="my-2" />
+            <CardFooter className="pt-4 flex justify-end">
+                <Button 
+                    onClick={handleConfirmAndAddToExpenses} 
+                    disabled={isPending || !allItemsMarked}
+                >
+                    <CheckCheck className="mr-2 h-4 w-4" />
+                    Confirm & Add All to Expenses
+                </Button>
+            </CardFooter>
+            </>
+          )}
         </CollapsibleContent>
       </Collapsible>
     </Card>
