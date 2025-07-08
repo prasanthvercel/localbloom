@@ -1,6 +1,6 @@
 import { Header } from '@/components/Header';
 import { MapPlaceholder } from '@/components/MapPlaceholder';
-import { VendorCard } from '@/components/VendorCard';
+import { VendorGrid } from '@/components/marketplace/VendorGrid';
 import { ViewToggle } from '@/components/ViewToggle';
 import { vendors as allVendors } from '@/data/vendors';
 
@@ -22,11 +22,7 @@ export default function MarketplacePage() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-2">
                             <h2 className="text-2xl font-bold tracking-tight text-foreground mb-4">All Vendors</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {allVendors.map(vendor => (
-                                    <VendorCard key={vendor.id} vendor={vendor} />
-                                ))}
-                            </div>
+                            <VendorGrid vendors={allVendors} />
                         </div>
                         <div className="lg:col-span-1">
                             <div className="sticky top-24">

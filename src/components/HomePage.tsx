@@ -1,19 +1,24 @@
+
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Header } from '@/components/Header';
 import { vendors as allVendors } from '@/data/vendors';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Search as SearchIcon, SearchX } from 'lucide-react';
+import { Search as SearchIcon, SearchX, Loader2 } from 'lucide-react';
 import { ProductResultCard, type ProductWithVendor } from '@/components/ProductResultCard';
 import { Input } from '@/components/ui/input';
 import { ViewToggle } from '@/components/ViewToggle';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
+const ITEMS_PER_PAGE = 10;
+
 export function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [user, setUser] = useState<User | null>(null);
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -32,7 +37,7 @@ export function HomePage() {
     };
   }, [supabase]);
 
-  const productsToShow = useMemo((): ProductWithVendor[] => {
+  const allProducts = useMemo((): ProductWithVendor[] => {
     const lowercasedQuery = searchQuery.toLowerCase().trim();
     const results: ProductWithVendor[] = [];
 
@@ -64,6 +69,35 @@ export function HomePage() {
 
     return results;
   }, [searchQuery]);
+  
+  const productsToShow = useMemo(() => {
+    return allProducts.slice(0, visibleCount);
+  }, [allProducts, visibleCount]);
+  
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prevCount) =>
+            Math.min(prevCount + ITEMS_PER_PAGE, allProducts.length)
+          );
+        }
+      },
+      { rootMargin: "200px" } // Load a bit before it's visible
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [allProducts.length]);
+
 
   const hasSearched = searchQuery.trim() !== '';
 
@@ -88,14 +122,17 @@ export function HomePage() {
                     placeholder="Search for apples, bread, tacos..." 
                     className="pl-12 w-full bg-card h-14 text-base rounded-full shadow-lg"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setVisibleCount(ITEMS_PER_PAGE);
+                    }}
                   />
               </div>
               
-              {productsToShow.length > 0 ? (
+              {allProducts.length > 0 ? (
                 <motion.div layout className="space-y-4">
                    {hasSearched ? (
-                      <h2 className="text-lg font-semibold text-center">Found {productsToShow.length} result{productsToShow.length > 1 ? 's' : ''} for "{searchQuery}"</h2>
+                      <h2 className="text-lg font-semibold text-center">Found {allProducts.length} result{allProducts.length > 1 ? 's' : ''} for "{searchQuery}"</h2>
                     ) : (
                       <h2 className="text-2xl font-bold tracking-tight text-foreground mb-4 text-center">All Products</h2>
                     )}
@@ -113,6 +150,12 @@ export function HomePage() {
                       </motion.div>
                     ))}
                   </AnimatePresence>
+                   {visibleCount < allProducts.length && (
+                    <div ref={loadMoreRef} className="flex justify-center items-center p-4 space-x-2 text-muted-foreground">
+                       <Loader2 className="h-5 w-5 animate-spin" />
+                       <span>Loading more products...</span>
+                    </div>
+                  )}
                 </motion.div>
               ) : (
                 <div className="text-center py-16 bg-card rounded-lg shadow-sm">
