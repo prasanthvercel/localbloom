@@ -8,15 +8,23 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Skeleton } from './ui/skeleton';
+import { cn } from '@/lib/utils';
+
+const navItems = [
+  { href: '/', label: 'Home' },
+  { href: '/marketplace', label: 'Marketplace' },
+  { href: '/calculator', label: 'Calculator' },
+];
 
 export function Header() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     // This listener is called once on mount with the initial session, and then
@@ -51,15 +59,35 @@ export function Header() {
     }
     return emailOrName.charAt(0).toUpperCase();
   };
+
+  const getIsActive = (href: string) => {
+    if (href === '/') return pathname === '/';
+    return pathname.startsWith(href);
+  }
   
   return (
     <header className="bg-card border-b border-border/40 sticky top-0 z-40 w-full">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2 mr-6">
           <Logo className="h-8 w-8 text-primary" />
           <span className="text-xl font-bold text-foreground font-headline">LocalBloom</span>
         </Link>
         
+        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'transition-colors hover:text-primary',
+                getIsActive(item.href) ? 'text-primary' : 'text-muted-foreground'
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
         <div className="flex-grow" />
 
         <div className="flex items-center gap-4">
