@@ -45,7 +45,7 @@ export function ExpenseTracker({ user, initialExpenses }: ExpenseTrackerProps) {
     resolver: zodResolver(expenseSchema),
     defaultValues: {
       itemName: '',
-      amount: undefined,
+      amount: '' as any,
     },
   });
 
