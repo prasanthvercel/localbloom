@@ -69,11 +69,11 @@ export function AccountForm({ user, profile }: AccountFormProps) {
 
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({
+      .upsert({
+        id: user.id,
         updated_at: new Date().toISOString(),
         ...values,
-      })
-      .eq('id', user.id);
+      });
 
     if (profileError) {
       toast({
