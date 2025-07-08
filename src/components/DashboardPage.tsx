@@ -119,8 +119,8 @@ export function DashboardPage({ user, shoppingListItems }: DashboardPageProps) {
                   <Sparkles className="h-6 w-6 text-amber-500" />
                   Featured Vendors
                 </h2>
-                <Link href="/marketplace" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
-                    Explore Marketplace <ArrowRight className="h-4 w-4" />
+                <Link href="/vendors" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
+                    Explore All Vendors <ArrowRight className="h-4 w-4" />
                 </Link>
              </div>
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
