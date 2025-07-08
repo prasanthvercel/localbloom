@@ -24,9 +24,25 @@ export function ShoppingList({ items }: ShoppingListProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [boughtItemIds, setBoughtItemIds] = useState<Set<number>>(new Set());
 
-  const total = useMemo(() => {
-    return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  }, [items]);
+  const { boughtTotal, remainingTotal, grandTotal } = useMemo(() => {
+    let bought = 0;
+    let remaining = 0;
+    
+    items.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        if (boughtItemIds.has(item.id)) {
+            bought += itemTotal;
+        } else {
+            remaining += itemTotal;
+        }
+    });
+
+    return {
+        boughtTotal: bought,
+        remainingTotal: remaining,
+        grandTotal: bought + remaining,
+    };
+  }, [items, boughtItemIds]);
 
   useEffect(() => {
     const handleScroll = (event: Event) => {
@@ -100,8 +116,15 @@ export function ShoppingList({ items }: ShoppingListProps) {
                     {items.length}
                   </span>
                 </CardTitle>
-                <CardDescription className="mt-1">
-                  Total Estimate: <span className="font-semibold text-primary">${total.toFixed(2)}</span>
+                 <CardDescription className="mt-1">
+                    <span>Total Estimate: <span className="font-semibold text-primary">${grandTotal.toFixed(2)}</span></span>
+                    {grandTotal > 0 && (
+                        <div className="text-xs text-muted-foreground mt-1 font-medium">
+                            <span className="text-green-600">Bought: ${boughtTotal.toFixed(2)}</span>
+                            <span className="mx-2">|</span>
+                            <span className="text-yellow-600">To Buy: ${remainingTotal.toFixed(2)}</span>
+                        </div>
+                    )}
                 </CardDescription>
               </div>
               <ChevronDown
