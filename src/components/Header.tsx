@@ -1,42 +1,23 @@
 "use client"
 
 import Link from 'next/link';
-import { Bell, Search } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/icons';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
 import { Label } from './ui/label';
 
-export function Header({
-  searchQuery,
-  onSearchChange,
-}: {
-  searchQuery?: string;
-  onSearchChange?: (value: string) => void;
-}) {
+export function Header() {
   return (
     <header className="bg-card border-b border-border/40 sticky top-0 z-40 w-full">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center">
         <Link href="/" className="flex items-center gap-2">
           <Logo className="h-8 w-8 text-primary" />
           <span className="text-xl font-bold text-foreground font-headline">LocalBloom</span>
         </Link>
         
-        <div className="flex-1 flex justify-center px-8">
-          {onSearchChange && (
-            <div className="relative w-full max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input 
-                placeholder="Search vendors or products..." 
-                className="pl-10 w-full bg-secondary focus:bg-card"
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-              />
-            </div>
-          )}
-        </div>
+        <div className="flex-grow" />
 
         <div className="flex items-center gap-2">
             <DropdownMenu>
