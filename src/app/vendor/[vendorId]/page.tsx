@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Header } from '@/components/Header';
 import { Separator } from '@/components/ui/separator';
+import { ReviewCount } from '@/components/vendor/ReviewCount';
 
 export async function generateStaticParams() {
   return vendors.map((vendor) => ({
@@ -54,7 +55,7 @@ export default async function VendorPage({ params }: { params: { vendorId: strin
                 <div className="flex items-center gap-2 mt-2 text-amber-300">
                     <Star className="h-5 w-5 fill-current" />
                     <span className="font-bold text-white">{vendor.rating.toFixed(1)}</span>
-                    <span className="text-sm text-white/80">({Math.floor(Math.random() * 100) + 10} reviews)</span>
+                    <ReviewCount />
                 </div>
              </div>
           </div>
