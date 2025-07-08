@@ -35,7 +35,7 @@ export default async function VendorPage({ params }: { params: { vendorId: strin
         <div className="mb-6">
           <Link href="/" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to search
+            Back to home
           </Link>
         </div>
 
@@ -74,7 +74,7 @@ export default async function VendorPage({ params }: { params: { vendorId: strin
           <TabsContent value="products" className="mt-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {vendor.products.map((product) => (
-                <ProductCard key={product.name} product={product} />
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
           </TabsContent>
@@ -119,27 +119,29 @@ export default async function VendorPage({ params }: { params: { vendorId: strin
 
 function ProductCard({ product }: { product: Product }) {
   return (
-    <Card className="overflow-hidden flex flex-col h-full group">
-      <div className="relative">
-        <Image src={product.image} alt={product.name} width={200} height={200} className="w-full h-40 object-cover group-hover:scale-105 transition-transform" data-ai-hint="produce food" />
-        {product.discount && (
-          <Badge className="absolute top-2 right-2 bg-accent text-accent-foreground">
-            <Tag className="h-3 w-3 mr-1" />{product.discount}
-          </Badge>
-        )}
-      </div>
-      <CardContent className="p-4 flex flex-col flex-grow">
-        <h4 className="font-semibold text-foreground truncate flex-grow">{product.name}</h4>
-        <div className="flex items-center justify-between mt-2">
-          <p className="text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
-          {product.lowPrice && (
-            <Badge variant="outline" className="border-green-500 text-green-600 bg-green-500/10 py-0.5 px-1.5 text-xs">
-              <Sparkles className="h-3 w-3 mr-1" />
-              Best Price
+    <Link href={`/products/${product.id}`} className="block h-full group">
+      <Card className="overflow-hidden flex flex-col h-full group">
+        <div className="relative">
+          <Image src={product.image} alt={product.name} width={200} height={200} className="w-full h-40 object-cover group-hover:scale-105 transition-transform" data-ai-hint="produce food" />
+          {product.discount && (
+            <Badge className="absolute top-2 right-2 bg-accent text-accent-foreground">
+              <Tag className="h-3 w-3 mr-1" />{product.discount}
             </Badge>
           )}
         </div>
-      </CardContent>
-    </Card>
+        <CardContent className="p-4 flex flex-col flex-grow">
+          <h4 className="font-semibold text-foreground truncate flex-grow">{product.name}</h4>
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
+            {product.lowPrice && (
+              <Badge variant="outline" className="border-green-500 text-green-600 bg-green-500/10 py-0.5 px-1.5 text-xs">
+                <Sparkles className="h-3 w-3 mr-1" />
+                Best Price
+              </Badge>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }

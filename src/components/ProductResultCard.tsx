@@ -65,8 +65,7 @@ export function ProductResultCard({ item, user }: ProductResultCardProps) {
     <>
       <Card className="overflow-hidden h-full group transition-all duration-300 ease-in-out hover:shadow-lg hover:border-primary/50">
         <div className="flex">
-          <Link href={`/vendor/${item.vendorId}`} className="flex flex-grow items-center">
-            <div className="relative w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0">
+           <Link href={`/products/${item.id}`} className="relative w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0">
               <Image 
                 src={item.image} 
                 alt={item.name} 
@@ -74,9 +73,11 @@ export function ProductResultCard({ item, user }: ProductResultCardProps) {
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
                 data-ai-hint="product image"
               />
-            </div>
+            </Link>
             <div className="p-4 flex flex-col flex-grow">
-              <h3 className="font-bold text-base sm:text-lg text-foreground pr-4 line-clamp-2">{item.name}</h3>
+              <Link href={`/products/${item.id}`}>
+                <h3 className="font-bold text-base sm:text-lg text-foreground pr-4 line-clamp-2 hover:text-primary transition-colors">{item.name}</h3>
+              </Link>
               
               <div className="flex items-center flex-wrap gap-2 mt-2">
                   {item.lowPrice && (
@@ -94,18 +95,19 @@ export function ProductResultCard({ item, user }: ProductResultCardProps) {
 
               <div className="flex-grow" />
 
-              <div className="mt-2 text-sm text-muted-foreground group-hover:text-primary transition-colors">
-                <div className="flex items-center gap-2">
-                    <Store className="h-4 w-4" />
-                    <span className="font-medium">{item.vendorName}</span>
-                </div>
-                <div className="flex items-center gap-1 text-xs pl-6">
-                    <Star className="h-3 w-3 fill-amber-400 text-amber-500" />
-                    <span>{item.vendorRating.toFixed(1)} rating</span>
-                </div>
+              <div className="mt-2 text-sm">
+                <Link href={`/vendor/${item.vendorId}`} className="text-muted-foreground hover:text-primary transition-colors group/vendor">
+                    <div className="flex items-center gap-2">
+                        <Store className="h-4 w-4" />
+                        <span className="font-medium">{item.vendorName}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs pl-6">
+                        <Star className="h-3 w-3 fill-amber-400 text-amber-500" />
+                        <span>{item.vendorRating.toFixed(1)} rating</span>
+                    </div>
+                </Link>
               </div>
             </div>
-          </Link>
 
           <div className="p-4 flex flex-col justify-center items-end border-l bg-card flex-shrink-0 w-32 sm:w-40">
             <p className="text-xl sm:text-2xl font-black text-primary mb-2">${item.price.toFixed(2)}</p>
