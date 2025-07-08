@@ -2,6 +2,7 @@ import { DashboardPage } from '@/components/DashboardPage';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import type { User } from '@supabase/supabase-js';
+import { VendorDashboardPage } from '@/components/vendor/VendorDashboardPage';
 
 export type ShoppingListItem = {
   id: number;
@@ -18,6 +19,11 @@ export default async function Home() {
   const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
+  if (user && user.user_metadata?.role === 'vendor') {
+    return <VendorDashboardPage user={user} />;
+  }
+
+  // Default to customer/guest view
   let shoppingListItems: ShoppingListItem[] = [];
   if (user) {
     const { data } = await supabase
