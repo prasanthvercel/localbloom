@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calculator, Home, User } from 'lucide-react';
+import { Calculator, Home, User, LayoutGrid } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -10,6 +10,7 @@ import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
+  { href: '/marketplace', label: 'Categories', icon: LayoutGrid },
   { href: '/calculator', label: 'Calculator', icon: Calculator, auth: true, role: 'customer' },
   { href: '/account', label: 'Profile', icon: User, auth: true },
 ];
@@ -33,6 +34,8 @@ export function BottomNav() {
 
   const getIsActive = (href: string) => {
     if (href === '/') return pathname === '/';
+    // For marketplace, we want an exact match, not startsWith
+    if (href === '/marketplace') return pathname === '/marketplace';
     return pathname.startsWith(href);
   }
 
@@ -44,7 +47,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/95 backdrop-blur-sm md:hidden">
-      <div className="container flex h-16 items-center justify-around px-4">
+      <div className="container grid h-16 w-full grid-cols-4 items-center px-4">
         {itemsToDisplay.map((item) => (
           <Link
             key={item.href}

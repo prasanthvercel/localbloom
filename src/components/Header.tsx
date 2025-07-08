@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Home' },
+  { href: '/marketplace', label: 'Categories' },
   { href: '/calculator', label: 'Calculator', role: 'customer' },
 ];
 
@@ -61,6 +62,8 @@ export function Header() {
 
   const getIsActive = (href: string) => {
     if (href === '/') return pathname === '/';
+    // For marketplace, we want an exact match, not startsWith, to avoid it being active on product pages
+    if (href === '/marketplace') return pathname === '/marketplace';
     return pathname.startsWith(href);
   }
 
