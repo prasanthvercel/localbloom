@@ -45,3 +45,5 @@ firebase-debug.log
 firestore-debug.log
 #sql
 .sql*
+supabase/schema.sql
+supabase/migrations/0001_add_expenses_table.sql
