@@ -1,7 +1,7 @@
 "use client"
 
 import Link from 'next/link';
-import { LogOut, LogIn, UserPlus, User as UserIcon } from 'lucide-react';
+import { LogOut, LogIn, UserPlus, User as UserIcon, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -12,6 +12,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Skeleton } from './ui/skeleton';
 import { cn } from '@/lib/utils';
+import { vendors } from '@/data/vendors';
 
 const navItems = [
   { href: '/', label: 'Home' },
@@ -25,6 +26,8 @@ export function Header() {
   const supabase = createClient();
   const router = useRouter();
   const pathname = usePathname();
+
+  const categories = [...new Set(vendors.map(vendor => vendor.category))];
 
   useEffect(() => {
     // This listener is called once on mount with the initial session, and then
@@ -66,6 +69,8 @@ export function Header() {
     if (href === '/marketplace') return pathname === '/marketplace';
     return pathname.startsWith(href);
   }
+  
+  const isCategoriesActive = pathname.startsWith('/products') || pathname === '/marketplace';
 
   const navItemsToDisplay = navItems.filter(item => !item.role || user?.user_metadata?.role === item.role);
   
@@ -78,18 +83,46 @@ export function Header() {
         </Link>
         
         <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-          {navItemsToDisplay.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'transition-colors hover:text-primary',
-                getIsActive(item.href) ? 'text-primary' : 'text-muted-foreground'
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {navItemsToDisplay.map((item) => {
+            if (item.label === 'Categories') {
+              return (
+                <DropdownMenu key="categories-dropdown">
+                  <DropdownMenuTrigger className={cn(
+                    'group flex items-center gap-1 outline-none transition-colors hover:text-primary',
+                    isCategoriesActive ? 'text-primary' : 'text-muted-foreground'
+                  )}>
+                    {item.label}
+                    <ChevronDown className="relative top-px h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem asChild>
+                      <Link href="/marketplace">All Categories</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {categories.map((category) => (
+                      <DropdownMenuItem key={category} asChild>
+                        <Link href={`/products?category=${encodeURIComponent(category)}`}>
+                          {category}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              );
+            }
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'transition-colors hover:text-primary',
+                  getIsActive(item.href) ? 'text-primary' : 'text-muted-foreground'
+                )}
+              >
+                {item.label}
+              </Link>
+            )
+          })}
         </nav>
 
         <div className="flex-grow" />
