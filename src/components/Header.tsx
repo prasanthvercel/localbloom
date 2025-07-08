@@ -15,23 +15,20 @@ import { Skeleton } from './ui/skeleton';
 export function Header() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
-  // Use useState to create a stable Supabase client instance
-  const [supabase] = useState(() => createClient());
+  const supabase = createClient();
   const router = useRouter();
 
   useEffect(() => {
-    const fetchUser = async () => {
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        setUser(currentUser);
-        setLoading(false);
-    };
-
-    fetchUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // This listener is called once on mount with the initial session, and then
+    // again whenever the auth state changes. This is the most reliable way
+    // to track the user's session on the client.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
-      if (_event === 'SIGNED_IN' || _event === 'SIGNED_OUT' || _event === 'USER_UPDATED') {
+
+      // When a user signs in or out, we want to refresh the page to
+      // re-fetch any server-side data that might have changed.
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
         router.refresh();
       }
     });
@@ -39,7 +36,7 @@ export function Header() {
     return () => {
       subscription?.unsubscribe();
     };
-  }, [supabase, router]);
+  }, [router, supabase]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
