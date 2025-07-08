@@ -14,12 +14,6 @@ import { Skeleton } from './ui/skeleton';
 import { cn } from '@/lib/utils';
 import { vendors } from '@/data/vendors';
 
-const navItems = [
-  { href: '/', label: 'Home' },
-  { href: '/marketplace', label: 'Categories' },
-  { href: '/calculator', label: 'Calculator', role: 'customer' },
-];
-
 export function Header() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,10 +63,28 @@ export function Header() {
     if (href === '/marketplace') return pathname === '/marketplace';
     return pathname.startsWith(href);
   }
+
+  const userRole = user?.user_metadata?.role;
+  let navItemsToDisplay: { href: string; label: string; isDropdown?: boolean }[] = [];
+
+  if (userRole === 'vendor') {
+    navItemsToDisplay = [
+      { href: '/', label: 'Dashboard' },
+      { href: '/vendor/products', label: 'My Products' },
+      { href: '/vendor/shop', label: 'My Shop' },
+    ];
+  } else {
+    // For customers and guests
+    navItemsToDisplay = [
+      { href: '/', label: 'Home' },
+      { href: '/marketplace', label: 'Categories', isDropdown: true },
+    ];
+    if (userRole === 'customer') {
+      navItemsToDisplay.push({ href: '/calculator', label: 'Calculator' });
+    }
+  }
   
   const isCategoriesActive = pathname.startsWith('/products') || pathname === '/marketplace';
-
-  const navItemsToDisplay = navItems.filter(item => !item.role || user?.user_metadata?.role === item.role);
   
   return (
     <header className="bg-card border-b border-border/40 sticky top-0 z-40 w-full">
@@ -84,7 +96,7 @@ export function Header() {
         
         <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
           {navItemsToDisplay.map((item) => {
-            if (item.label === 'Categories') {
+            if (item.isDropdown) {
               return (
                 <DropdownMenu key="categories-dropdown">
                   <DropdownMenuTrigger className={cn(

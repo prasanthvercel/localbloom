@@ -60,3 +60,6 @@ BEGIN
     RETURN COALESCE(is_complete, FALSE);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+  ALTER TABLE public.products
+ADD COLUMN unit TEXT;
