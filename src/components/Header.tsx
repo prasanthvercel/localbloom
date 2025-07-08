@@ -15,23 +15,31 @@ import { Skeleton } from './ui/skeleton';
 export function Header() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  // Use useState to create a stable Supabase client instance
+  const [supabase] = useState(() => createClient());
   const router = useRouter();
 
   useEffect(() => {
-    setLoading(true);
+    const fetchUser = async () => {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        setUser(currentUser);
+        setLoading(false);
+    };
+
+    fetchUser();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
-       if (_event === 'SIGNED_IN' || _event === 'SIGNED_OUT') {
+      if (_event === 'SIGNED_IN' || _event === 'SIGNED_OUT' || _event === 'USER_UPDATED') {
         router.refresh();
       }
     });
 
     return () => {
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
-  }, [supabase.auth, router]);
+  }, [supabase, router]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
