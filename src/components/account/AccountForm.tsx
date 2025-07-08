@@ -87,7 +87,6 @@ export function AccountForm({ user, profile }: AccountFormProps) {
         description: 'Your information has been saved successfully.',
       });
        router.push('/');
-       router.refresh();
     }
     setIsLoading(false);
   };
