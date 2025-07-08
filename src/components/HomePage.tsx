@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { vendors as allVendors } from '@/data/vendors';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -8,9 +8,29 @@ import { Search as SearchIcon, SearchX } from 'lucide-react';
 import { ProductResultCard, type ProductWithVendor } from '@/components/ProductResultCard';
 import { Input } from '@/components/ui/input';
 import { ViewToggle } from '@/components/ViewToggle';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 export function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [user, setUser] = useState<User | null>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    }
+    getUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   const productsToShow = useMemo((): ProductWithVendor[] => {
     const lowercasedQuery = searchQuery.toLowerCase().trim();
@@ -89,7 +109,7 @@ export function HomePage() {
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
                       >
-                        <ProductResultCard item={item} />
+                        <ProductResultCard item={item} user={user} />
                       </motion.div>
                     ))}
                   </AnimatePresence>

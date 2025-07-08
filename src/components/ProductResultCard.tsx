@@ -1,9 +1,15 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { Product } from '@/data/vendors';
-import { Star, Sparkles, Tag, Store } from 'lucide-react';
+import { Star, Sparkles, Tag, Store, PlusCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { addExpenseFromProduct } from '@/app/calculator/actions';
+import type { User } from '@supabase/supabase-js';
 
 export type ProductWithVendor = Product & {
   vendorId: string;
@@ -13,11 +19,48 @@ export type ProductWithVendor = Product & {
 
 interface ProductResultCardProps {
   item: ProductWithVendor;
+  user: User | null;
 }
 
-export function ProductResultCard({ item }: ProductResultCardProps) {
+export function ProductResultCard({ item, user }: ProductResultCardProps) {
+  const { toast } = useToast();
+
+  const handleAddExpense = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const result = await addExpenseFromProduct(formData);
+
+    if (result.success) {
+      toast({
+        title: 'Item Added',
+        description: result.message,
+      });
+    } else {
+      toast({
+        title: 'Error',
+        description: result.error || 'Failed to add item.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
-    <Card className="overflow-hidden h-full group transition-all duration-300 ease-in-out hover:shadow-lg hover:border-primary/50">
+    <Card className="overflow-hidden h-full group transition-all duration-300 ease-in-out hover:shadow-lg hover:border-primary/50 relative">
+      {user && (
+        <form onSubmit={handleAddExpense} className="absolute top-2 right-2 z-10">
+          <input type="hidden" name="itemName" value={item.name} />
+          <input type="hidden" name="amount" value={item.price.toString()} />
+          <Button
+            type="submit"
+            variant="secondary"
+            size="icon"
+            className="h-8 w-8 rounded-full shadow-md text-primary bg-primary/10 hover:bg-primary/20"
+          >
+            <PlusCircle className="h-5 w-5" />
+            <span className="sr-only">Add to expenses</span>
+          </Button>
+        </form>
+      )}
        <Link href={`/vendor/${item.vendorId}`} className="block">
         <div className="flex">
           <div className="relative w-32 h-32 sm:w-36 sm:h-36">
