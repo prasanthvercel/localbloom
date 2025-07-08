@@ -2,16 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Compass, Search, User } from 'lucide-react';
+import { Calculator, Home, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 const navItems = [
-  { href: '/', label: 'Products', icon: Search },
-  { href: '/marketplace', label: 'Marketplace', icon: Compass },
-  { href: '/account', label: 'Account', icon: User, auth: true },
+  { href: '/', label: 'Home', icon: Home },
+  { href: '/calculator', label: 'Calculator', icon: Calculator },
+  { href: '/account', label: 'Profile', icon: User, auth: true },
 ];
 
 export function BottomNav() {
