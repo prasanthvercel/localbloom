@@ -18,6 +18,10 @@ export async function addExpenseFromProduct(formData: FormData): Promise<AddExpe
     return { success: false, error: 'You must be logged in to add expenses.' };
   }
 
+  if (user.user_metadata?.role !== 'customer') {
+    return { success: false, error: 'Only customers can add expenses.' };
+  }
+
   const itemName = formData.get('itemName') as string;
   const amount = parseFloat(formData.get('amount') as string);
   

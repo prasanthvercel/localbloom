@@ -46,7 +46,7 @@ export function ProductResultCard({ item, user }: ProductResultCardProps) {
 
   return (
     <Card className="overflow-hidden h-full group transition-all duration-300 ease-in-out hover:shadow-lg hover:border-primary/50 relative">
-      {user && (
+      {user && user.user_metadata?.role === 'customer' && (
         <form onSubmit={handleAddExpense} className="absolute top-2 right-2 z-10">
           <input type="hidden" name="itemName" value={item.name} />
           <input type="hidden" name="amount" value={item.price.toString()} />

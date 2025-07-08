@@ -10,7 +10,7 @@ import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
-  { href: '/calculator', label: 'Calculator', icon: Calculator },
+  { href: '/calculator', label: 'Calculator', icon: Calculator, auth: true, role: 'customer' },
   { href: '/account', label: 'Profile', icon: User, auth: true },
 ];
 
@@ -37,7 +37,8 @@ export function BottomNav() {
   }
 
   const itemsToDisplay = navItems.filter(item => {
-    if (item.auth) return !loading && !!user;
+    if (item.auth && (loading || !user)) return false;
+    if (item.role && user?.user_metadata?.role !== item.role) return false;
     return true;
   });
 

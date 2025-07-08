@@ -12,6 +12,10 @@ export default async function CalculatorPage() {
   if (!user) {
     redirect('/login');
   }
+  
+  if (user.user_metadata?.role !== 'customer') {
+    redirect('/');
+  }
 
   const today = new Date();
   const startDate = format(startOfMonth(today), 'yyyy-MM-dd');
