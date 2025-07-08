@@ -67,16 +67,18 @@ export function AccountForm({ user, profile }: AccountFormProps) {
       return;
     }
 
-    const { error: upsertError } = await supabase.from('profiles').upsert({
-      id: user.id,
-      updated_at: new Date().toISOString(),
-      ...values,
-    });
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        updated_at: new Date().toISOString(),
+        ...values,
+      })
+      .eq('id', user.id);
 
-    if (upsertError) {
+    if (profileError) {
       toast({
         title: 'Profile Update Failed',
-        description: upsertError.message,
+        description: profileError.message,
         variant: 'destructive',
       });
     } else {
