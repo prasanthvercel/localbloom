@@ -52,8 +52,8 @@ export function VendorDashboardPage({ user }: VendorDashboardPageProps) {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Button asChild className="w-full" variant="outline" disabled>
-                            <Link href="/vendor/shop-settings">Manage Shop</Link>
+                        <Button asChild className="w-full" variant="outline">
+                            <Link href="/vendor/shop">Manage Shop</Link>
                         </Button>
                     </CardContent>
                 </Card>
@@ -69,7 +69,7 @@ export function VendorDashboardPage({ user }: VendorDashboardPageProps) {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Button asChild className="w-full" disabled>
+                        <Button asChild className="w-full">
                             <Link href="/vendor/products">Manage Products</Link>
                         </Button>
                     </CardContent>

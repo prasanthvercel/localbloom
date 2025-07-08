@@ -1,3 +1,4 @@
+
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
 
@@ -41,32 +42,51 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Redirect to account setup if user is logged in but profile is incomplete.
-  // Do not redirect for the account page itself.
-  if (user && !request.nextUrl.pathname.startsWith('/account')) {
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('full_name, address, city, state, pincode, mobile_number')
-      .eq('id', user.id)
-      .single();
+  // If a user is logged in, check if their profile is complete.
+  if (user) {
+    const isVendor = user.user_metadata?.role === 'vendor';
+    const currentPath = request.nextUrl.pathname;
+    
+    // For customers, check their `profiles` table.
+    if (!isVendor && !currentPath.startsWith('/account')) {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('full_name, address, city, state, pincode, mobile_number')
+        .eq('id', user.id)
+        .single();
 
-    // PGRST116 means no row was found, which is expected for a new user.
-    // We redirect if there's no profile or if any of the essential fields are empty.
-    const isProfileIncomplete = !profile || 
-                                !profile.full_name ||
-                                !profile.address ||
-                                !profile.city ||
-                                !profile.state ||
-                                !profile.pincode ||
-                                !profile.mobile_number;
+      const isProfileIncomplete = !profile || 
+                                  !profile.full_name ||
+                                  !profile.address ||
+                                  !profile.city ||
+                                  !profile.state ||
+                                  !profile.pincode ||
+                                  !profile.mobile_number;
 
-    if (isProfileIncomplete && (error?.code === 'PGRST116' || !error)) {
-       const url = request.nextUrl.clone()
-       url.pathname = '/account'
-       return NextResponse.redirect(url)
+      if (isProfileIncomplete && (error?.code === 'PGRST116' || !error)) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/account'
+        return NextResponse.redirect(url)
+      }
+    }
+    
+    // For vendors, check if they have created their shop.
+    if (isVendor && !currentPath.startsWith('/vendor/shop') && !currentPath.startsWith('/account')) {
+      const { data: vendor, error } = await supabase
+        .from('vendors')
+        .select('name, category, description')
+        .eq('user_id', user.id)
+        .single();
+      
+      const isShopProfileIncomplete = !vendor || !vendor.name || !vendor.category || !vendor.description;
+
+      if (isShopProfileIncomplete && (error?.code === 'PGRST116' || !error)) {
+         const url = request.nextUrl.clone()
+         url.pathname = '/vendor/shop'
+         return NextResponse.redirect(url)
+      }
     }
   }
-
 
   return response
 }
