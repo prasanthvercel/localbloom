@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Checkbox } from '@/components/ui/checkbox';
@@ -10,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { ShoppingListItem } from '@/app/page';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ShoppingListProps {
   items: ShoppingListItem[];
@@ -25,18 +27,18 @@ export function ShoppingList({ items }: ShoppingListProps) {
   }, [items]);
 
   useEffect(() => {
-    const handleScroll = () => {
-      // If the list is open and the user scrolls down, close it.
-      if (isOpen && window.scrollY > 0) {
-        setIsOpen(false);
-      }
+    const handleScroll = (event: Event) => {
+        // Only collapse if the scroll event is on the main window, not within another scrollable element
+        if (event.target === document && isOpen && window.scrollY > 0) {
+            setIsOpen(false);
+        }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, true); // Use capture phase
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', handleScroll, true);
     };
-  }, [isOpen]); // Rerun the effect if `isOpen` changes.
+  }, [isOpen]);
 
   const handleMarkAsBought = (id: number) => {
     startTransition(async () => {
@@ -85,56 +87,58 @@ export function ShoppingList({ items }: ShoppingListProps) {
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="pt-0 pb-4">
-            <ul className="space-y-3">
-              {items.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex items-center gap-4 p-2 -ml-2 rounded-lg transition-colors hover:bg-muted/50"
-                >
-                  <Checkbox
-                    id={`item-${item.id}`}
-                    onCheckedChange={() => handleMarkAsBought(item.id)}
-                    disabled={isPending}
-                    aria-label={`Mark ${item.product_name} as bought`}
-                    className="h-5 w-5"
-                  />
-                  <Image
-                    src={item.image_url}
-                    alt={item.product_name}
-                    width={48}
-                    height={48}
-                    className="rounded-md object-cover"
-                    data-ai-hint="product image"
-                  />
-                  <div className="flex-grow">
-                    <div className="font-semibold text-foreground">
-                      {item.product_name}{' '}
-                      {item.quantity > 1 && (
-                        <span className="text-muted-foreground font-normal text-sm">
-                          (x{item.quantity})
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      from {item.vendor_name}
-                    </div>
-                  </div>
-                  <div className="font-bold text-lg text-primary">
-                    ${(item.price * item.quantity).toFixed(2)}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full"
-                    onClick={() => handleDelete(item.id)}
-                    disabled={isPending}
-                    aria-label="Delete item"
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </li>
-              ))}
-            </ul>
+             <ScrollArea className="h-72">
+                <ul className="space-y-3 pr-4">
+                  {items.map((item) => (
+                    <li
+                      key={item.id}
+                      className="flex items-center gap-4 p-2 -ml-2 rounded-lg transition-colors hover:bg-muted/50"
+                    >
+                      <Checkbox
+                        id={`item-${item.id}`}
+                        onCheckedChange={() => handleMarkAsBought(item.id)}
+                        disabled={isPending}
+                        aria-label={`Mark ${item.product_name} as bought`}
+                        className="h-5 w-5"
+                      />
+                      <Image
+                        src={item.image_url}
+                        alt={item.product_name}
+                        width={48}
+                        height={48}
+                        className="rounded-md object-cover"
+                        data-ai-hint="product image"
+                      />
+                      <div className="flex-grow">
+                        <div className="font-semibold text-foreground">
+                          {item.product_name}{' '}
+                          {item.quantity > 1 && (
+                            <span className="text-muted-foreground font-normal text-sm">
+                              (x{item.quantity})
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          from {item.vendor_name}
+                        </div>
+                      </div>
+                      <div className="font-bold text-lg text-primary">
+                        ${(item.price * item.quantity).toFixed(2)}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full"
+                        onClick={() => handleDelete(item.id)}
+                        disabled={isPending}
+                        aria-label="Delete item"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+            </ScrollArea>
           </CardContent>
         </CollapsibleContent>
       </Collapsible>
