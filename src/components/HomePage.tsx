@@ -9,33 +9,21 @@ import { Search as SearchIcon, SearchX, Loader2 } from 'lucide-react';
 import { ProductResultCard, type ProductWithVendor } from '@/components/ProductResultCard';
 import { Input } from '@/components/ui/input';
 import { ViewToggle } from '@/components/ViewToggle';
-import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
+import type { ShoppingListItem } from '@/app/page';
+import { ShoppingList } from './shopping-list/ShoppingList';
 
 const ITEMS_PER_PAGE = 10;
 
-export function HomePage() {
+interface HomePageProps {
+    user: User | null;
+    shoppingListItems: ShoppingListItem[];
+}
+
+export function HomePage({ user, shoppingListItems }: HomePageProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [user, setUser] = useState<User | null>(null);
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const loadMoreRef = useRef<HTMLDivElement>(null);
-  const supabase = createClient();
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    }
-    getUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
 
   const allProducts = useMemo((): ProductWithVendor[] => {
     const lowercasedQuery = searchQuery.toLowerCase().trim();
@@ -106,6 +94,10 @@ export function HomePage() {
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="max-w-5xl mx-auto">
+          {user && shoppingListItems.length > 0 && (
+             <ShoppingList items={shoppingListItems} />
+          )}
+
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground text-center mb-2 font-headline">
             Find the Best Local Deals
           </h1>

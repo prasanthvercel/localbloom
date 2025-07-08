@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { addExpenseFromProduct } from '@/app/calculator/actions';
+import { addItemToShoppingList } from '@/app/shopping-list/actions';
 import type { User } from '@supabase/supabase-js';
 
 export type ProductWithVendor = Product & {
@@ -31,18 +31,18 @@ export function ProductResultCard({ item, user }: ProductResultCardProps) {
   const [quantity, setQuantity] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAddExpense = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleAddItem = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
     
     const formData = new FormData(event.currentTarget);
     formData.set('quantity', quantity.toString());
     
-    const result = await addExpenseFromProduct(formData);
+    const result = await addItemToShoppingList(formData);
 
     if (result.success) {
       toast({
-        title: 'Item Added',
+        title: 'Item Added!',
         description: result.message,
       });
       setOpen(false);
@@ -118,17 +118,20 @@ export function ProductResultCard({ item, user }: ProductResultCardProps) {
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
-                  <form onSubmit={handleAddExpense}>
+                  <form onSubmit={handleAddItem}>
                     <DialogHeader>
-                      <DialogTitle>Add to Expense List</DialogTitle>
+                      <DialogTitle>Add to Shopping List</DialogTitle>
                       <DialogDescription>
-                        Set the quantity for <span className="font-semibold">{item.name}</span>. The total will be added to your expense tracker.
+                        Set the quantity for <span className="font-semibold">{item.name}</span>. This will be added to your shopping list on the home page.
                       </DialogDescription>
                     </DialogHeader>
 
                     <div className="grid gap-4 py-4">
-                       <input type="hidden" name="itemName" value={item.name} />
-                       <input type="hidden" name="amount" value={item.price.toString()} />
+                       <input type="hidden" name="productName" value={item.name} />
+                       <input type="hidden" name="price" value={item.price.toString()} />
+                       <input type="hidden" name="vendorName" value={item.vendorName} />
+                       <input type="hidden" name="imageUrl" value={item.image} />
+
                        <div className="flex items-center justify-center gap-4">
                           <Button type="button" variant="outline" size="icon" onClick={() => handleQuantityChange(-1)} disabled={quantity <= 1}>
                               <MinusCircle className="h-4 w-4" />
@@ -151,7 +154,7 @@ export function ProductResultCard({ item, user }: ProductResultCardProps) {
                     <DialogFooter>
                       <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
                       <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? 'Adding...' : 'Add to Expenses'}
+                        {isSubmitting ? 'Adding...' : 'Add to List'}
                       </Button>
                     </DialogFooter>
                   </form>
