@@ -11,6 +11,7 @@ const productSchema = z.object({
     vendor_id: z.string().uuid(),
     name: z.string().min(3, 'Name must be at least 3 characters'),
     price: z.coerce.number().positive('Price must be a positive number'),
+    unit: z.string().optional(),
     description: z.string().min(10, 'Description must be at least 10 characters'),
     image: z.string().url('Invalid URL').optional().or(z.literal('')),
     discount: z.string().optional(),

@@ -25,6 +25,7 @@ interface ProductFormDialogProps {
 const formSchema = z.object({
     name: z.string().min(3, 'Name must be at least 3 characters'),
     price: z.coerce.number().positive('Price must be a positive number'),
+    unit: z.string().optional(),
     description: z.string().min(10, 'Description must be at least 10 characters'),
     image: z.string().url('Invalid URL').optional().or(z.literal('')),
     discount: z.string().optional(),
@@ -41,6 +42,7 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProd
         defaultValues: {
             name: '',
             price: 0,
+            unit: '',
             description: '',
             image: '',
             discount: '',
@@ -54,6 +56,7 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProd
             form.reset({
                 name: product.name,
                 price: product.price,
+                unit: product.unit || '',
                 description: product.description,
                 image: product.image,
                 discount: product.discount || '',
@@ -62,7 +65,7 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProd
             });
         } else {
             form.reset({
-                name: '', price: 0, description: '', image: '', discount: '', sizes: '', colors: ''
+                name: '', price: 0, unit: '', description: '', image: '', discount: '', sizes: '', colors: ''
             });
         }
     }, [product, form]);
@@ -109,9 +112,14 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProd
                         <FormField control={form.control} name="name" render={({ field }) => (
                             <FormItem><FormLabel>Product Name</FormLabel><FormControl><Input placeholder="e.g., Organic Apples" {...field} /></FormControl><FormMessage /></FormItem>
                         )}/>
-                        <FormField control={form.control} name="price" render={({ field }) => (
-                            <FormItem><FormLabel>Price ($)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="3.99" {...field} /></FormControl><FormMessage /></FormItem>
-                        )}/>
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField control={form.control} name="price" render={({ field }) => (
+                                <FormItem><FormLabel>Price ($)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="3.99" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                             <FormField control={form.control} name="unit" render={({ field }) => (
+                                <FormItem><FormLabel>Unit (Optional)</FormLabel><FormControl><Input placeholder="per kg, piece, etc." {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                        </div>
                          <FormField control={form.control} name="description" render={({ field }) => (
                             <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Describe your product..." {...field} /></FormControl><FormMessage /></FormItem>
                         )}/>
@@ -139,4 +147,3 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProd
         </Dialog>
     );
 }
-

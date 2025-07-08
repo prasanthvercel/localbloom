@@ -87,7 +87,10 @@ export function ProductListClient({ initialProducts, vendorId }: ProductListClie
                                                 <Image src={product.image || 'https://placehold.co/100x100.png'} alt={product.name} width={40} height={40} className="rounded-md object-cover" />
                                             </TableCell>
                                             <TableCell className="font-medium">{product.name}</TableCell>
-                                            <TableCell>${product.price.toFixed(2)}</TableCell>
+                                            <TableCell>
+                                                ${product.price.toFixed(2)}
+                                                {product.unit && <span className="text-muted-foreground text-xs ml-1">/{product.unit}</span>}
+                                            </TableCell>
                                             <TableCell>{product.discount || 'N/A'}</TableCell>
                                             <TableCell>
                                                 <DropdownMenu>
