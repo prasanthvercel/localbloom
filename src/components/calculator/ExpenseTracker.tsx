@@ -11,9 +11,11 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trash2, PlusCircle, Save } from 'lucide-react';
+import { Trash2, PlusCircle, Save, Pencil, XCircle } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { format } from 'date-fns';
+import { updateExpense } from '@/app/calculator/actions';
+
 
 const expenseSchema = z.object({
   itemName: z.string().min(2, { message: 'Item name must be at least 2 characters.' }),
@@ -40,12 +42,15 @@ export function ExpenseTracker({ user, initialExpenses }: ExpenseTrackerProps) {
   const [items, setItems] = useState<Expense[]>(initialExpenses);
   const [newItems, setNewItems] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editedItemName, setEditedItemName] = useState('');
+  const [editedAmount, setEditedAmount] = useState<number | string>('');
 
   const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
       itemName: '',
-      amount: '' as any,
+      amount: '',
     },
   });
 
@@ -98,12 +103,53 @@ export function ExpenseTracker({ user, initialExpenses }: ExpenseTrackerProps) {
     } else {
       toast({ title: 'Success', description: 'Your expenses have been saved.' });
       // Add new saved items to the main list and clear the new items list
-      setItems(prev => [...data, ...prev].sort((a, b) => (a.id ?? 0) - (b.id ?? 0) ));
+      setItems(prev => [...data, ...prev].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
       setNewItems([]);
     }
     setIsLoading(false);
   };
   
+  const handleEditClick = (item: Expense) => {
+    setEditingId(item.id!);
+    setEditedItemName(item.item_name);
+    setEditedAmount(item.amount);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditedItemName('');
+    setEditedAmount('');
+  };
+
+  const handleUpdateExpense = async (itemId: number) => {
+    const amountNumber = Number(editedAmount);
+    if (!editedItemName || isNaN(amountNumber) || amountNumber <= 0) {
+      toast({
+        title: 'Invalid Data',
+        description: 'Please provide a valid item name and amount.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    const result = await updateExpense(itemId, editedItemName, amountNumber);
+
+    if (result.success && result.updatedExpense) {
+      setItems(prevItems =>
+        prevItems.map(item =>
+          item.id === itemId ? { ...item, ...result.updatedExpense! } : item
+        )
+      );
+      toast({ title: 'Success', description: 'Expense updated.' });
+      handleCancelEdit();
+    } else {
+      toast({ title: 'Error', description: result.error || 'Failed to update expense.', variant: 'destructive' });
+    }
+    setIsLoading(false);
+  };
+
+
   const totalExpenses = useMemo(() => {
     const existingTotal = items.reduce((sum, item) => sum + Number(item.amount), 0);
     const newTotal = newItems.reduce((sum, item) => sum + Number(item.amount), 0);
@@ -163,7 +209,7 @@ export function ExpenseTracker({ user, initialExpenses }: ExpenseTrackerProps) {
                 <TableRow>
                   <TableHead>Item</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="w-[100px] text-center">Actions</TableHead>
+                  <TableHead className="w-[120px] text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -186,14 +232,48 @@ export function ExpenseTracker({ user, initialExpenses }: ExpenseTrackerProps) {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {items.map((item) => (
+                    {items.map((item) =>
+                      editingId === item.id ? (
+                        <TableRow key={item.id} className="bg-secondary/50">
+                          <TableCell>
+                            <Input
+                              value={editedItemName}
+                              onChange={(e) => setEditedItemName(e.target.value)}
+                              className="h-8"
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                             <Input
+                              type="number"
+                              value={editedAmount}
+                              onChange={(e) => setEditedAmount(e.target.value)}
+                              className="h-8 w-24 ml-auto"
+                            />
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex justify-center items-center">
+                              <Button variant="ghost" size="icon" onClick={() => handleUpdateExpense(item.id!)} disabled={isLoading}>
+                                <Save className="h-4 w-4 text-primary" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={handleCancelEdit}>
+                                <XCircle className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
                       <TableRow key={item.id}>
                         <TableCell>{item.item_name}</TableCell>
                         <TableCell className="text-right">${Number(item.amount).toFixed(2)}</TableCell>
                         <TableCell className="text-center">
-                           <Button variant="ghost" size="icon" onClick={() => onRemoveExistingItem(item.id!)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          <div className="flex justify-center items-center">
+                             <Button variant="ghost" size="icon" onClick={() => handleEditClick(item)}>
+                                <Pencil className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => onRemoveExistingItem(item.id!)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                           </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -208,7 +288,7 @@ export function ExpenseTracker({ user, initialExpenses }: ExpenseTrackerProps) {
             Total for {currentMonth}: <span className="text-primary">${totalExpenses.toFixed(2)}</span>
           </div>
           <Button onClick={onSaveExpenses} disabled={isLoading || newItems.length === 0} className="w-full sm:w-auto mt-4 sm:mt-0">
-            {isLoading ? 'Saving...' : <><Save className="mr-2" /> Save New Expenses</>}
+            {isLoading && !editingId ? 'Saving...' : <><Save className="mr-2" /> Save New Expenses</>}
           </Button>
         </CardFooter>
       </Card>
