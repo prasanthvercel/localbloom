@@ -9,7 +9,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Switch } from '@/components/ui/switch';
 import { Label } from './ui/label';
 
-export function Header() {
+export function Header({
+  searchQuery,
+  onSearchChange,
+}: {
+  searchQuery?: string;
+  onSearchChange?: (value: string) => void;
+}) {
   return (
     <header className="bg-card border-b border-border/40 sticky top-0 z-40 w-full">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
@@ -19,13 +25,17 @@ export function Header() {
         </Link>
         
         <div className="flex-1 flex justify-center px-8">
-          <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input 
-              placeholder="Search vendors..." 
-              className="pl-10 w-full bg-secondary focus:bg-card"
-            />
-          </div>
+          {onSearchChange && (
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input 
+                placeholder="Search vendors or products..." 
+                className="pl-10 w-full bg-secondary focus:bg-card"
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
