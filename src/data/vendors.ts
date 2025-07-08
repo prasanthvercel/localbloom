@@ -9,7 +9,7 @@ export type Product = {
 export type Vendor = {
   id: string;
   name: string;
-  category: 'Produce' | 'Crafts' | 'Food' | 'Bakery';
+  category: 'Produce' | 'Crafts' | 'Food' | 'Bakery' | 'Clothing';
   image: string;
   description: string;
   products: Product[];
@@ -130,5 +130,20 @@ export const vendors: Vendor[] = [
     hours: [{ day: 'Saturday', time: '9:00 AM - 3:00 PM' }],
     location: { lat: 50, lng: 60 },
     rating: 4.5,
+  },
+  {
+    id: 'artisan-threads',
+    name: 'Artisan Threads',
+    category: 'Clothing',
+    image: 'https://placehold.co/400x250.png',
+    description: 'Handcrafted, sustainable clothing made with natural dyes and organic fabrics.',
+    products: [
+        { name: 'Organic Cotton T-Shirt', price: 35.00, image: 'https://placehold.co/100x100.png' },
+        { name: 'Linen Trousers', price: 85.00, image: 'https://placehold.co/100x100.png', discount: '10% off' },
+        { name: 'Hand-dyed Scarf', price: 45.00, image: 'https://placehold.co/100x100.png', lowPrice: true },
+    ],
+    hours: [{ day: 'Saturday', time: '10:00 AM - 4:00 PM' }],
+    location: { lat: 15, lng: 15 },
+    rating: 4.9,
   }
 ];

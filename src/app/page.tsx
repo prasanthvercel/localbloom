@@ -1,4 +1,4 @@
-import { HomePage } from '@/components/HomePage';
+import { DashboardPage } from '@/components/DashboardPage';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import type { User } from '@supabase/supabase-js';
@@ -27,5 +27,5 @@ export default async function Home() {
     shoppingListItems = data || [];
   }
 
-  return <HomePage user={user as User | null} shoppingListItems={shoppingListItems} />;
+  return <DashboardPage user={user as User | null} shoppingListItems={shoppingListItems} />;
 }
