@@ -1,7 +1,7 @@
 "use client"
 
 import Link from 'next/link';
-import { LogOut, LogIn, UserPlus } from 'lucide-react';
+import { LogOut, LogIn, UserPlus, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -30,22 +30,28 @@ export function Header() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
+       if (_event === 'SIGNED_OUT') {
+        router.refresh();
+      }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase.auth]);
+  }, [supabase.auth, router]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/');
-    router.refresh();
   };
-
-  const getInitials = (email: string | undefined) => {
-    if (!email) return 'U';
-    return email.charAt(0).toUpperCase();
+  
+  const getInitials = (emailOrName: string | undefined) => {
+    if (!emailOrName) return 'U';
+    const parts = emailOrName.split(' ');
+    if (parts.length > 1 && parts[1]) {
+        return parts[0].charAt(0).toUpperCase() + parts[1].charAt(0).toUpperCase();
+    }
+    return emailOrName.charAt(0).toUpperCase();
   };
   
   return (
@@ -60,32 +66,32 @@ export function Header() {
 
         <div className="flex items-center gap-4">
           {loading ? (
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-10 w-20" />
-              <Skeleton className="h-10 w-20" />
-            </div>
+             <Skeleton className="h-10 w-10 rounded-full" />
           ) : user ? (
             <>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
-                       <AvatarImage src={user.user_metadata?.avatar_url} alt={user.email} />
-                      <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
+                       <AvatarImage src={user.user_metadata?.avatar_url} alt={user.user_metadata?.full_name || user.email} />
+                      <AvatarFallback>{getInitials(user.user_metadata?.full_name || user.email)}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">My Account</p>
+                      <p className="text-sm font-medium leading-none">{user.user_metadata?.full_name || 'My Account'}</p>
                       <p className="text-xs leading-none text-muted-foreground">
                         {user.email}
                       </p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
+                  <DropdownMenuItem asChild>
+                     <Link href="/account" className='cursor-pointer'><UserIcon className="mr-2 h-4 w-4" />Account</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout} className='cursor-pointer'>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>

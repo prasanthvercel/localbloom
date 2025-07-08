@@ -17,44 +17,36 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
+          request.cookies.set({ name, value, ...options, })
+          response = NextResponse.next({ request: { headers: request.headers, }, })
+          response.cookies.set({ name, value, ...options, })
         },
         remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
+          request.cookies.set({ name, value: '', ...options, })
+          response = NextResponse.next({ request: { headers: request.headers, }, })
+          response.cookies.set({ name, value: '', ...options, })
         },
       },
     }
   )
 
-  await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Redirect to account setup if user is new and hasn't set up their profile
+  if (user && !request.nextUrl.pathname.startsWith('/account')) {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single();
+
+    if ((!profile || !profile.full_name) && !error ) {
+       const url = request.nextUrl.clone()
+       url.pathname = '/account'
+       return NextResponse.redirect(url)
+    }
+  }
+
 
   return response
 }
@@ -66,8 +58,9 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - auth routes (login, register)
      * Feel free to modify this pattern to include more paths.
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|login|register|vendor/login|vendor/register|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
