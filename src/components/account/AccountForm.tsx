@@ -16,7 +16,8 @@ import type { User } from '@supabase/supabase-js';
 import type { Profile } from '@/types';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { HeartPulse } from 'lucide-react';
+import { HeartPulse, Gem, Check } from 'lucide-react';
+import { Badge } from '../ui/badge';
 
 const profileSchema = z.object({
   full_name: z.string().min(3, { message: 'Full name must be at least 3 characters.' }),
@@ -104,6 +105,13 @@ export function AccountForm({ user, profile }: AccountFormProps) {
        router.refresh(); // To ensure middleware re-validates the profile
     }
     setIsLoading(false);
+  };
+
+  const handleSubscriptionChange = (plan: string) => {
+    toast({
+        title: "Coming Soon!",
+        description: `Subscription management for the ${plan} plan is not yet implemented.`,
+    });
   };
 
   const isNewUser = !profile?.full_name;
@@ -293,6 +301,51 @@ export function AccountForm({ user, profile }: AccountFormProps) {
                         )}
                       />
                   </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                    <CardTitle className="text-xl flex items-center gap-2"><Gem className="text-primary"/> My Subscription</CardTitle>
+                    <CardDescription>Your current plan is <Badge variant="secondary" className="font-semibold">{profile?.subscription_tier || 'Free'}</Badge>. Manage your subscription below.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Card className={profile?.subscription_tier === 'basic' ? 'border-primary ring-2 ring-primary' : ''}>
+                           <CardHeader>
+                             <CardTitle>Basic Plan</CardTitle>
+                             <CardDescription className="font-bold text-lg text-foreground">₹249 <span className="text-sm font-normal text-muted-foreground">/ month</span></CardDescription>
+                           </CardHeader>
+                           <CardContent className="space-y-3">
+                              <ul className="text-sm space-y-2 text-muted-foreground">
+                                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500"/>100 scans per month</li>
+                                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500"/>Personalized advice</li>
+                              </ul>
+                              {profile?.subscription_tier === 'basic' ? (
+                                <Button className="w-full" disabled>Current Plan</Button>
+                              ) : (
+                                <Button className="w-full" variant="outline" onClick={() => handleSubscriptionChange('Basic')}>Upgrade to Basic</Button>
+                              )}
+                           </CardContent>
+                        </Card>
+                        <Card className={profile?.subscription_tier === 'pro' ? 'border-primary ring-2 ring-primary' : ''}>
+                           <CardHeader>
+                             <CardTitle>Pro Plan</CardTitle>
+                             <CardDescription className="font-bold text-lg text-foreground">₹499 <span className="text-sm font-normal text-muted-foreground">/ month</span></CardDescription>
+                           </CardHeader>
+                           <CardContent className="space-y-3">
+                              <ul className="text-sm space-y-2 text-muted-foreground">
+                                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500"/>300 scans per month</li>
+                                <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500"/>Personalized advice</li>
+                              </ul>
+                               {profile?.subscription_tier === 'pro' ? (
+                                <Button className="w-full" disabled>Current Plan</Button>
+                              ) : (
+                                <Button className="w-full" onClick={() => handleSubscriptionChange('Pro')}>Upgrade to Pro</Button>
+                              )}
+                           </CardContent>
+                        </Card>
+                    </div>
+                </CardContent>
               </Card>
 
               <Button type="submit" className="w-full" size="lg" disabled={isLoading}>

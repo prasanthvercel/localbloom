@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Gem, HeartPulse, ScanLine, Tag } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface SubscriptionPromptDialogProps {
   isOpen: boolean;
@@ -20,6 +21,12 @@ interface SubscriptionPromptDialogProps {
 }
 
 export function SubscriptionPromptDialog({ isOpen, setIsOpen }: SubscriptionPromptDialogProps) {
+  const router = useRouter();
+
+  const handleViewPlans = () => {
+    router.push('/account');
+    setIsOpen(false);
+  };
   
   return (
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
@@ -73,7 +80,7 @@ export function SubscriptionPromptDialog({ isOpen, setIsOpen }: SubscriptionProm
         <AlertDialogFooter>
           <AlertDialogCancel>Maybe Later</AlertDialogCancel>
           <AlertDialogAction asChild>
-            <Button>
+            <Button onClick={handleViewPlans}>
               View Subscription Plans
             </Button>
           </AlertDialogAction>
