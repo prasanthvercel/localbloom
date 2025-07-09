@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
+import type { Profile } from '@/types';
 
 // Helper component
 function NavItem({ item, isActive }: { item: { href: string; label: string; icon: React.ElementType }, isActive: boolean }) {
@@ -37,7 +38,6 @@ const vendorNavItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/vendor/products', label: 'Products', icon: LayoutGrid },
   { href: '/vendor/shop', label: 'Shop', icon: Calculator, auth: true, role: 'vendor' },
-  { href: '/account', label: 'Profile', icon: HeartPulse, auth: true },
 ];
 
 const scannerItem = { href: '/scanner', label: 'Scan', icon: Camera };
@@ -46,12 +46,24 @@ const scannerGateItem = { href: '/scanner/gate', label: 'Scan', icon: Camera };
 export function BottomNav() {
   const pathname = usePathname();
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [profile, setProfile] = useState<Partial<Profile> | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('role, subscription_tier')
+          .eq('id', currentUser.id)
+          .single();
+        setProfile(profileData);
+      } else {
+        setProfile(null);
+      }
       setLoading(false);
     });
 
@@ -69,12 +81,14 @@ export function BottomNav() {
     return pathname.startsWith(href);
   }
 
-  const userRole = user?.user_metadata?.role;
+  const userRole = profile?.role || user?.user_metadata?.role;
+  const isSubscribed = profile?.subscription_tier && profile.subscription_tier !== 'free';
   const navItems = userRole === 'vendor' ? vendorNavItems : baseNavItems;
 
   const itemsToDisplay = navItems.filter(item => {
     if (item.auth && (loading || !user)) return false;
     if (item.role && userRole !== item.role) return false;
+    if (item.href === '/nutrition' && !isSubscribed) return false;
     return true;
   });
 
@@ -88,6 +102,7 @@ export function BottomNav() {
           {itemsToDisplay.map((item) => (
             <NavItem key={item.href} item={item} isActive={getIsActive(item.href)} />
           ))}
+          <NavItem key="/account" item={{ href: '/account', label: 'Profile', icon: UserIcon }} isActive={getIsActive('/account')} />
         </div>
       </nav>
     );

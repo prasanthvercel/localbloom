@@ -2,7 +2,7 @@
 "use client"
 
 import Link from 'next/link';
-import { LogOut, LogIn, UserPlus, User as UserIcon, ChevronDown, Camera, HeartPulse } from 'lucide-react';
+import { LogOut, LogIn, UserPlus, User as UserIcon, ChevronDown, Camera, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -13,9 +13,11 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Skeleton } from './ui/skeleton';
 import { cn } from '@/lib/utils';
+import type { Profile } from '@/types';
 
 export function Header() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [profile, setProfile] = useState<Partial<Profile> | null>(null);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<string[]>([]);
   const supabase = createClient();
@@ -33,8 +35,21 @@ export function Header() {
     
     fetchCategories();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+         const { data: profileData } = await supabase
+            .from('profiles')
+            .select('subscription_tier')
+            .eq('id', currentUser.id)
+            .single();
+        setProfile(profileData);
+      } else {
+        setProfile(null);
+      }
+
       setLoading(false);
 
       if (event === 'SIGNED_IN') {
@@ -78,6 +93,7 @@ export function Header() {
   }
 
   const userRole = user?.user_metadata?.role;
+  const isSubscribed = profile?.subscription_tier && profile.subscription_tier !== 'free';
   let navItemsToDisplay: { href: string; label: string; isDropdown?: boolean, icon?: React.ElementType }[] = [];
 
   if (userRole === 'vendor') {
@@ -95,7 +111,9 @@ export function Header() {
     
     // Show nutrition and expenses only for customers
     if (userRole === 'customer') {
-      navItemsToDisplay.push({ href: '/nutrition', label: 'Nutrition' });
+      if (isSubscribed) {
+        navItemsToDisplay.push({ href: '/nutrition', label: 'Nutrition' });
+      }
       navItemsToDisplay.push({ href: '/calculator', label: 'Expenses' });
     }
     

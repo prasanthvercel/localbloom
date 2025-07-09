@@ -63,6 +63,7 @@ export type Profile = {
     // Scanner usage
     scan_count: number | null;
     last_scan_date: string | null; // as ISO string
+    subscription_tier: string | null; // e.g., 'free', 'basic', 'pro'
     // Wellness data
     height: number | null; // in cm
     weight: number | null; // in kg

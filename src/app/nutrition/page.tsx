@@ -16,7 +16,7 @@ import { Progress } from '@/components/ui/progress';
 import { generateDietPlan } from '@/ai/flows/generate-diet-plan-flow';
 import type { WeeklyDietPlan, NutritionLog, Profile, DailyPlan, Meal } from '@/types';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, getDay } from 'date-fns';
-import { Loader2, Utensils, Zap, ShieldAlert, HeartPulse } from 'lucide-react';
+import { Loader2, Utensils, Zap, ShieldAlert, HeartPulse, Gem } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { updateWellnessProfile } from './actions';
 import { Textarea } from '@/components/ui/textarea';
+import { SubscriptionPromptDialog } from '@/components/scanner/SubscriptionPromptDialog';
 
 const dayIndexToName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
@@ -149,6 +150,37 @@ function WellnessProfileForm({ profile, onProfileUpdated }: { profile: Profile |
     );
 }
 
+function NutritionSubscriptionGate() {
+  const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
+
+  return (
+    <>
+      <SubscriptionPromptDialog isOpen={showSubscriptionPrompt} setIsOpen={setShowSubscriptionPrompt} />
+      <div className="flex flex-col min-h-screen bg-secondary/30">
+        <Header />
+        <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
+          <Card className="max-w-lg w-full text-center">
+            <CardHeader>
+              <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
+                <Gem className="h-10 w-10 text-primary" />
+              </div>
+              <CardTitle className="text-2xl pt-4">Unlock Personalized Nutrition</CardTitle>
+              <CardDescription>
+                This is a premium feature. Subscribe to get access to AI-generated weekly diet plans, progress tracking, and personalized advice based on your wellness goals.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button size="lg" onClick={() => setShowSubscriptionPrompt(true)}>
+                View Subscription Plans
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    </>
+  );
+}
+
 
 const NutritionPage = () => {
     const supabase = createClient();
@@ -160,6 +192,7 @@ const NutritionPage = () => {
     const [nutritionLog, setNutritionLog] = useState<NutritionLog[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [isProfileIncomplete, setIsProfileIncomplete] = useState(false);
+    const [isSubscribed, setIsSubscribed] = useState(false);
 
 
     const weekInterval = useMemo(() => ({
@@ -225,16 +258,30 @@ const NutritionPage = () => {
                  setIsLoading(false);
                  return;
             }
-
-            if (!profileData || !profileData.height || !profileData.weight || !profileData.wellness_goal) {
+            
+            if (profileData) {
                 setProfile(profileData);
-                setIsProfileIncomplete(true);
-                setIsLoading(false);
-                return;
-            }
+                const subscribed = profileData.subscription_tier && profileData.subscription_tier !== 'free';
+                setIsSubscribed(subscribed);
 
-            setProfile(profileData);
-            await fetchPlanAndLog(user, profileData);
+                if (!subscribed) {
+                    setIsLoading(false);
+                    return;
+                }
+
+                if (!profileData.height || !profileData.weight || !profileData.wellness_goal) {
+                    setIsProfileIncomplete(true);
+                    setIsLoading(false);
+                    return;
+                }
+
+                setProfile(profileData);
+                await fetchPlanAndLog(user, profileData);
+            } else {
+                 // No profile found, which means not subscribed and incomplete
+                setIsSubscribed(false);
+                setIsLoading(false);
+            }
         };
         initialize();
     }, [supabase, router, fetchPlanAndLog]);
@@ -275,12 +322,15 @@ const NutritionPage = () => {
                 <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
                     <div className="flex flex-col items-center gap-4 text-muted-foreground">
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                        <p className="font-semibold text-lg">Generating your personalized plan...</p>
-                        <p>This may take a moment.</p>
+                        <p className="font-semibold text-lg">Loading your nutrition data...</p>
                     </div>
                 </main>
             </div>
         );
+    }
+
+    if (!isSubscribed) {
+        return <NutritionSubscriptionGate />;
     }
     
     if (isProfileIncomplete) {
