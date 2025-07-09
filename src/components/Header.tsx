@@ -1,7 +1,8 @@
+
 "use client"
 
 import Link from 'next/link';
-import { LogOut, LogIn, UserPlus, User as UserIcon, ChevronDown } from 'lucide-react';
+import { LogOut, LogIn, UserPlus, User as UserIcon, ChevronDown, ScanLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -97,7 +98,7 @@ export function Header() {
           <span className="text-xl font-bold text-foreground font-headline">LocalBloom</span>
         </Link>
         
-        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
+        <nav className="hidden md:flex items-center space-x-4 text-sm font-medium">
           {navItemsToDisplay.map((item) => {
             if (item.isDropdown) {
               return (
@@ -125,6 +126,18 @@ export function Header() {
                 </DropdownMenu>
               );
             }
+            
+            if (item.href === '/scanner') {
+              return (
+                <Button key={item.href} asChild variant={getIsActive(item.href) ? 'default' : 'outline'} size="sm">
+                  <Link href={item.href}>
+                    <ScanLine />
+                    {item.label}
+                  </Link>
+                </Button>
+              )
+            }
+
             return (
               <Link
                 key={item.href}
