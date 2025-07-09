@@ -4,12 +4,12 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Camera, ScanLine, Sparkles, Languages, Info, HeartPulse, User } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Sparkles, Languages, HeartPulse } from 'lucide-react';
 import { analyzeProductImage, type AnalyzeProductImageOutput } from '@/ai/flows/analyze-product-image-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,13 +24,13 @@ const FREE_SCAN_LIMIT = 3;
 export default function ScannerPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [isAnonymous, setIsAnonymous] = useState(false);
   const [remainingScans, setRemainingScans] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -70,45 +70,31 @@ export default function ScannerPage() {
 
     const initializeScanner = async () => {
       setIsInitializing(true);
-      await getCameraPermission();
-      
       const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        router.push('/login?redirect=/scanner');
+        return;
+      }
+      
       setUser(user);
-
-      if (user) {
-        setIsAnonymous(false);
-        const { data: profile } = await supabase.from('profiles').select('scan_count, last_scan_date').eq('id', user.id).single();
+      
+      await getCameraPermission();
         
-        let currentScanCount = 0;
-        if (profile) {
-          const today = new Date();
-          const lastScan = profile.last_scan_date ? new Date(profile.last_scan_date) : null;
-          currentScanCount = profile.scan_count || 0;
+      const { data: profile } = await supabase.from('profiles').select('scan_count, last_scan_date').eq('id', user.id).single();
+      
+      let currentScanCount = 0;
+      if (profile) {
+        const today = new Date();
+        const lastScan = profile.last_scan_date ? new Date(profile.last_scan_date) : null;
+        currentScanCount = profile.scan_count || 0;
 
-          if (lastScan && (lastScan.getMonth() !== today.getMonth() || lastScan.getFullYear() !== today.getFullYear())) {
-            currentScanCount = 0;
-          }
-        }
-        setRemainingScans(Math.max(0, FREE_SCAN_LIMIT - currentScanCount));
-      } else {
-        setIsAnonymous(true);
-        try {
-          const storedData = localStorage.getItem('anonymousScanData');
-          let count = 0;
-          if (storedData) {
-            const data = JSON.parse(storedData);
-            const today = new Date();
-            const lastScan = new Date(data.lastScanDate);
-            if (lastScan.getMonth() === today.getMonth() && lastScan.getFullYear() === today.getFullYear()) {
-              count = data.count || 0;
-            }
-          }
-          setRemainingScans(Math.max(0, FREE_SCAN_LIMIT - count));
-        } catch (e) {
-          console.error("Could not read from local storage", e);
-          setRemainingScans(FREE_SCAN_LIMIT);
+        if (lastScan && (lastScan.getMonth() !== today.getMonth() || lastScan.getFullYear() !== today.getFullYear())) {
+          currentScanCount = 0;
         }
       }
+      setRemainingScans(Math.max(0, FREE_SCAN_LIMIT - currentScanCount));
+
       setIsInitializing(false);
     };
 
@@ -119,10 +105,10 @@ export default function ScannerPage() {
         (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
       }
     };
-  }, [supabase]);
+  }, [supabase, router]);
 
   const captureAndAnalyze = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current || !canvasRef.current || !user) return;
     
     if (remainingScans <= 0) {
       setShowSubscriptionPrompt(true);
@@ -140,31 +126,11 @@ export default function ScannerPage() {
     const photoDataUri = canvas.toDataURL('image/jpeg');
 
     try {
-      const result = await analyzeProductImage({ photoDataUri, language, userId: user?.id });
+      const result = await analyzeProductImage({ photoDataUri, language, userId: user.id });
       setAnalysisResult(result);
 
       if (result.isFoodItem) {
         setRemainingScans(prev => Math.max(0, prev - 1));
-        // Update anonymous count in local storage
-        if (isAnonymous) {
-          try {
-            const storedData = localStorage.getItem('anonymousScanData');
-            let data = { count: 0, lastScanDate: new Date().toISOString() };
-            if (storedData) {
-              data = JSON.parse(storedData);
-            }
-            const today = new Date();
-            const lastScan = new Date(data.lastScanDate);
-            if (lastScan.getMonth() !== today.getMonth() || lastScan.getFullYear() !== today.getFullYear()) {
-              data.count = 0;
-            }
-            data.count += 1;
-            data.lastScanDate = today.toISOString();
-            localStorage.setItem('anonymousScanData', JSON.stringify(data));
-          } catch (e) {
-            console.error("Could not write to local storage", e);
-          }
-        }
         toast({ title: 'Analysis Complete!', description: `Identified: ${result.productName}.` });
       } else {
          toast({ variant: 'destructive', title: 'Not a Food Item', description: 'The scanner is optimized for food items. Please try again.' });
@@ -220,7 +186,7 @@ export default function ScannerPage() {
             </Select>
           </div>
 
-          <Button onClick={captureAndAnalyze} disabled={isLoading} className="w-full sm:w-1/2 h-16 text-lg sm:self-end">
+          <Button onClick={captureAndAnalyze} disabled={isLoading || !user} className="w-full sm:w-1/2 h-16 text-lg sm:self-end">
             {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <><Camera className="mr-2 h-6 w-6" /> Scan Product</>}
           </Button>
         </div>
@@ -230,7 +196,7 @@ export default function ScannerPage() {
 
   return (
     <>
-      <SubscriptionPromptDialog isOpen={showSubscriptionPrompt} setIsOpen={setShowSubscriptionPrompt} isAnonymous={isAnonymous} />
+      <SubscriptionPromptDialog isOpen={showSubscriptionPrompt} setIsOpen={setShowSubscriptionPrompt} />
       <div className="flex flex-col min-h-screen bg-secondary/30">
         <Header />
         <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -239,9 +205,6 @@ export default function ScannerPage() {
               <CardTitle className="text-2xl font-bold flex items-center gap-2"><ScanLine className="text-primary"/> Product Scanner</CardTitle>
               <CardDescription>
                 You have <span className="font-bold text-primary">{remainingScans}</span> free scan(s) remaining this month.
-                {isAnonymous && <span className="block text-xs mt-1">
-                  <Link href="/login" className="underline">Log in</Link> or <Link href="/register" className="underline">sign up for free</Link> to get more scans and personalized advice.
-                </span>}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

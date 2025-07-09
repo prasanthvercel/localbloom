@@ -29,11 +29,12 @@ function NavItem({ item, isActive }: { item: { href: string; label: string; icon
 const baseNavItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/marketplace', label: 'Categories', icon: LayoutGrid },
-  { href: '/calculator', label: 'Calculator', icon: Calculator, auth: true, role: 'customer' },
+  { href: '/calculator', label: 'Calculator', auth: true, role: 'customer' },
   { href: '/account', label: 'Profile', icon: User, auth: true },
 ];
 
 const scannerItem = { href: '/scanner', label: 'Scan', icon: ScanLine };
+const scannerGateItem = { href: '/scanner/gate', label: 'Scan', icon: ScanLine };
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -54,7 +55,8 @@ export function BottomNav() {
 
   const getIsActive = (href: string) => {
     if (href === '/') return pathname === '/';
-    if (href === '/marketplace') return pathname === '/marketplace';
+    if (href.includes('marketplace')) return pathname.startsWith('/marketplace') || pathname.startsWith('/products');
+    if (href.includes('scanner')) return pathname.startsWith('/scanner');
     return pathname.startsWith(href);
   }
 
@@ -65,10 +67,10 @@ export function BottomNav() {
   });
 
   const userRole = user?.user_metadata?.role;
-  const showScanner = !loading && (userRole === 'customer' || !user);
+  const finalScannerItem = user ? scannerItem : scannerGateItem;
 
   // Regular flex layout for vendors (or if loading)
-  if (!showScanner) {
+  if (userRole === 'vendor') {
     return (
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/95 backdrop-blur-sm md:hidden">
         <div className="container flex h-16 w-full items-center justify-around px-4">
@@ -89,13 +91,13 @@ export function BottomNav() {
     <div className="fixed bottom-0 left-0 right-0 z-40 h-20 md:hidden">
         {/* Floating Action Button */}
         <div className="absolute top-0 left-1/2 z-10 h-16 w-16 -translate-x-1/2">
-           <Link href={scannerItem.href} passHref>
+           <Link href={finalScannerItem.href} passHref>
               <Button
                 size="icon"
                 className="h-full w-full rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background hover:bg-primary/90"
-                aria-label={scannerItem.label}
+                aria-label={finalScannerItem.label}
               >
-                <scannerItem.icon className="h-8 w-8" />
+                <finalScannerItem.icon className="h-8 w-8" />
               </Button>
             </Link>
          </div>

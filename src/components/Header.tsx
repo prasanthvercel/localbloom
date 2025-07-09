@@ -37,8 +37,15 @@ export function Header() {
       setUser(session?.user ?? null);
       setLoading(false);
 
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
-        router.refresh();
+      if (event === 'SIGNED_IN') {
+        const redirectPath = new URLSearchParams(window.location.search).get('redirect');
+        if (redirectPath) {
+          router.push(redirectPath);
+        } else {
+          router.refresh();
+        }
+      } else if (event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+         router.refresh();
       }
     });
 
@@ -63,7 +70,8 @@ export function Header() {
 
   const getIsActive = (href: string) => {
     if (href === '/') return pathname === '/';
-    if (href === '/marketplace') return pathname === '/marketplace';
+    if (href.includes('/marketplace')) return pathname.startsWith('/marketplace') || pathname.startsWith('/products');
+    if (href.includes('/scanner')) return pathname.startsWith('/scanner');
     return pathname.startsWith(href);
   }
 
@@ -82,10 +90,9 @@ export function Header() {
       { href: '/', label: 'Home' },
       { href: '/marketplace', label: 'Categories', isDropdown: true },
     ];
-    // Show scanner for guests and customers
-    if (!user || userRole === 'customer') {
-      navItemsToDisplay.push({ href: '/scanner', label: 'Scanner' });
-    }
+    // Scanner link depends on auth state
+    navItemsToDisplay.push({ href: user ? '/scanner' : '/scanner/gate', label: 'Scanner' });
+    
     // Show calculator only for customers
     if (userRole === 'customer') {
       navItemsToDisplay.push({ href: '/calculator', label: 'Calculator' });
@@ -131,7 +138,7 @@ export function Header() {
               );
             }
             
-            if (item.href === '/scanner') {
+            if (item.label === 'Scanner') {
               return (
                 <Button key={item.href} asChild variant={getIsActive(item.href) ? 'default' : 'outline'} size="sm">
                   <Link href={item.href}>

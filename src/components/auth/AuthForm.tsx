@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -34,6 +34,7 @@ type AuthFormProps = {
 
 export function AuthForm({ mode, userType }: AuthFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -51,6 +52,8 @@ export function AuthForm({ mode, userType }: AuthFormProps) {
 
   const onSubmit = async (values: z.infer<typeof schema>) => {
     setIsLoading(true);
+    const redirectPath = searchParams.get('redirect') || '/';
+
     if (mode === 'login') {
       const { error } = await supabase.auth.signInWithPassword({
         email: values.email,
@@ -63,8 +66,8 @@ export function AuthForm({ mode, userType }: AuthFormProps) {
           variant: 'destructive',
         });
       } else {
-        router.push('/');
-        router.refresh();
+        router.push(redirectPath);
+        // No need to call refresh, onAuthStateChange in Header will handle it
       }
     } else { // register
       const { email, password } = values as z.infer<typeof registerSchema>;
@@ -88,7 +91,8 @@ export function AuthForm({ mode, userType }: AuthFormProps) {
           title: 'Registration Successful',
           description: 'Please check your email to verify your account.',
         });
-        router.push(userType === 'customer' ? '/login' : '/vendor/login');
+        const loginPath = userType === 'customer' ? '/login' : '/vendor/login';
+        router.push(`${loginPath}?redirect=${encodeURIComponent(redirectPath)}`);
       }
     }
     setIsLoading(false);
@@ -161,14 +165,14 @@ export function AuthForm({ mode, userType }: AuthFormProps) {
               {mode === 'login' ? (
                 <>
                   Don&apos;t have an account?{' '}
-                  <Link href={userType === 'customer' ? '/register' : '/vendor/register'} className="underline">
+                  <Link href={`${userType === 'customer' ? '/register' : '/vendor/register'}?redirect=${encodeURIComponent(searchParams.get('redirect') || '/')}`} className="underline">
                     Sign up
                   </Link>
                 </>
               ) : (
                 <>
                   Already have an account?{' '}
-                  <Link href={userType === 'customer' ? '/login' : '/vendor/login'} className="underline">
+                   <Link href={`${userType === 'customer' ? '/login' : '/vendor/login'}?redirect=${encodeURIComponent(searchParams.get('redirect') || '/')}`} className="underline">
                     Login
                   </Link>
                 </>
