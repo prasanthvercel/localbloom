@@ -96,17 +96,8 @@ export default function ScannerPage() {
       if (isSubscribed) {
         setRemainingScans(Infinity); // Subscribed users have unlimited scans
       } else {
-        let currentScanCount = 0;
-        if (profile) {
-          const today = new Date();
-          const lastScan = profile.last_scan_date ? new Date(profile.last_scan_date) : null;
-          currentScanCount = profile.scan_count || 0;
-
-          if (lastScan && (lastScan.getMonth() !== today.getMonth() || lastScan.getFullYear() !== today.getFullYear())) {
-            currentScanCount = 0;
-          }
-        }
-        setRemainingScans(FREE_SCAN_LIMIT - currentScanCount);
+        // FOR TESTING: Force remaining scans to 0 to test subscription prompt
+        setRemainingScans(0);
       }
       setIsInitializing(false);
     };
