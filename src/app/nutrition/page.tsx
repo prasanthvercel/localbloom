@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
@@ -143,10 +143,11 @@ const NutritionPage = () => {
     const [isProfileIncomplete, setIsProfileIncomplete] = useState(false);
 
 
-    const weekInterval = {
+    const weekInterval = useMemo(() => ({
         start: startOfWeek(new Date(), { weekStartsOn: 1 }), // Monday
         end: endOfWeek(new Date(), { weekStartsOn: 1 }), // Sunday
-    };
+    }), []);
+
     const weekDays = eachDayOfInterval(weekInterval);
 
     const fetchPlanAndLog = useCallback(async (currentUser: User, currentProfile: Profile) => {
@@ -181,7 +182,7 @@ const NutritionPage = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [supabase, weekInterval.end, weekInterval.start]);
+    }, [supabase, weekInterval]);
 
     useEffect(() => {
         const initialize = async () => {
