@@ -46,3 +46,20 @@ export type ShoppingListItem = {
   bought: boolean;
   created_at: string;
 };
+
+export type Profile = {
+    id: string;
+    updated_at: string;
+    full_name: string | null;
+    avatar_url: string | null;
+    role: string | null;
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    country: string | null;
+    pincode: string | null;
+    mobile_number: string | null;
+    // New fields for scanner usage
+    scan_count: number | null;
+    last_scan_date: string | null; // as ISO string
+};

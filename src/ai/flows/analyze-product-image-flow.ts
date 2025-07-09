@@ -9,6 +9,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
 const AnalyzeProductImageInputSchema = z.object({
   photoDataUri: z
@@ -17,6 +19,7 @@ const AnalyzeProductImageInputSchema = z.object({
       "A photo of a food item, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
   language: z.string().describe('The language for the output description.'),
+  userId: z.string().uuid().describe('The ID of the user performing the scan.'),
 });
 export type AnalyzeProductImageInput = z.infer<
   typeof AnalyzeProductImageInputSchema
@@ -63,7 +66,53 @@ const analyzeProductImageFlow = ai.defineFlow(
     outputSchema: AnalyzeProductImageOutputSchema,
   },
   async (input) => {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+
+    // Fetch profile to check/reset count
+    const { data: profile, error: fetchError } = await supabase
+      .from('profiles')
+      .select('scan_count, last_scan_date')
+      .eq('id', input.userId)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = row not found
+        throw new Error('Could not retrieve user profile.');
+    }
+
+    const today = new Date();
+    const lastScan = profile?.last_scan_date ? new Date(profile.last_scan_date) : null;
+    let scanCount = profile?.scan_count || 0;
+
+    // Reset count if last scan was in a previous month
+    if (lastScan && (lastScan.getMonth() !== today.getMonth() || lastScan.getFullYear() !== today.getFullYear())) {
+        scanCount = 0;
+    }
+
+    if (scanCount >= 3) {
+        // This check is also on the client, but is a necessary safeguard.
+        throw new Error('Free scan limit reached for this month.');
+    }
+    
+    // Call the model
     const { output } = await prompt(input);
+
+    // If analysis is successful (it's a food item), increment the scan count.
+    if (output && output.isFoodItem) {
+        const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+                scan_count: scanCount + 1,
+                last_scan_date: today.toISOString(),
+            })
+            .eq('id', input.userId);
+        
+        if (updateError) {
+            // Log the error but don't fail the whole flow. The user got their analysis.
+            console.error('Failed to update scan count:', updateError);
+        }
+    }
+
     return output!;
   }
 );

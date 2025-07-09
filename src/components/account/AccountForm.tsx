@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { User } from '@supabase/supabase-js';
+import type { Profile } from '@/types';
 
 const profileSchema = z.object({
   full_name: z.string().min(3, { message: 'Full name must be at least 3 characters.' }),
@@ -22,13 +23,6 @@ const profileSchema = z.object({
   pincode: z.string().regex(/^\d{5,6}$/, { message: 'Invalid pincode format.' }),
   mobile_number: z.string().regex(/^\+?[1-9]\d{1,14}$/, { message: 'Invalid mobile number.' }),
 });
-
-type Profile = z.infer<typeof profileSchema> & {
-    id: string;
-    updated_at: string;
-    avatar_url: string;
-    role: string;
-}
 
 interface AccountFormProps {
   user: User;
