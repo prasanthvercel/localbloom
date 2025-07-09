@@ -240,7 +240,7 @@ export default function ScannerPage() {
               <CardDescription>
                 You have <span className="font-bold text-primary">{remainingScans}</span> free scan(s) remaining this month.
                 {isAnonymous && <span className="block text-xs mt-1">
-                  <Link href="/login" className="underline">Log in</Link> or <Link href="/register" className="underline">sign up</Link> to get more scans and personalized advice.
+                  <Link href="/login" className="underline">Log in</Link> or <Link href="/register" className="underline">sign up for free</Link> to get more scans and personalized advice.
                 </span>}
               </CardDescription>
             </CardHeader>

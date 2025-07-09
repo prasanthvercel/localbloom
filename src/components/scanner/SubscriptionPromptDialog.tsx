@@ -33,7 +33,7 @@ export function SubscriptionPromptDialog({ isOpen, setIsOpen, isAnonymous }: Sub
                 Join to Continue Scanning
               </AlertDialogTitle>
               <AlertDialogDescription>
-                You've used all your free anonymous scans. Create a free account or log in to get more monthly scans and unlock personalized wellness advice.
+                You've used your free guest scans. Creating an account is free and gives you 3 scans every month! Sign up or log in to continue scanning and unlock personalized advice.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
