@@ -91,7 +91,7 @@ const analysisPrompt = ai.definePrompt({
   ANALYSIS STEPS:
   1.  First, identify the primary product in the image. Set 'productName' to its common name in English. If you cannot identify a product, return an empty string for 'productName' and other fields.
   2.  Next, determine if the identified product is a food item. Set 'isFoodItem' to true or false.
-  3.  Write a friendly and helpful description (2-4 sentences) about the product.
+  3.  Write a friendly and helpful description (2-4 sentences) about the product. If it is not a food item, this description MUST include the product's primary use or purpose. Do not include nutritional info in this description.
   4.  If and ONLY IF 'isFoodItem' is true, perform the following nutritional analysis:
       a. Provide structured nutritional information for a standard serving size in the 'nutrition' field.
       b. CRITICAL: If the user has provided wellness data, provide personalized dietary advice.

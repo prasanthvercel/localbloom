@@ -308,7 +308,7 @@ export default function ScannerPage() {
                        <Separator className="my-0" />
                        <div className="px-6 py-4 space-y-4">
                          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                            <h3 className="text-lg font-semibold leading-none tracking-tight">Price Comparison</h3>
+                            <h3 className="text-lg font-semibold leading-none tracking-tight">Available in the Marketplace</h3>
                              {analysisResult.isFoodItem && user?.user_metadata?.role === 'customer' && analysisResult.nutrition && (
                                 <Button variant="outline" size="sm" onClick={() => setShowLogDialog(true)}>
                                     <Apple className="mr-2 h-4 w-4" /> Add to Diet Log
