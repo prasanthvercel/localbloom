@@ -39,6 +39,7 @@ const GenerateDietPlanInputSchema = z.object({
   height: z.number().describe('User height in cm.'),
   weight: z.number().describe('User weight in kg.'),
   wellness_goal: z.string().describe('User wellness goal (e.g., Weight Loss, Muscle Gain).'),
+  health_conditions: z.string().optional().describe('Comma-separated list of user health conditions or allergies (e.g., "Diabetes, Lactose Intolerant").'),
   language: z.string().describe('The language for the output meal descriptions.'),
 });
 export type GenerateDietPlanInput = z.infer<typeof GenerateDietPlanInputSchema>;
@@ -69,6 +70,7 @@ const prompt = ai.definePrompt({
     - Height: {{{height}}} cm
     - Weight: {{{weight}}} kg
     - Goal: {{{wellness_goal}}}
+    - Health Conditions: {{#if health_conditions}}{{{health_conditions}}}{{else}}None specified{{/if}}
 
     INSTRUCTIONS:
     1.  Calculate an appropriate daily calorie target based on the user's profile and goal.
@@ -79,6 +81,11 @@ const prompt = ai.definePrompt({
     6.  Ensure the meal names and descriptions are in the requested language: {{{language}}}. The overall structure and keys of the output must remain in English.
     7.  The meals should be simple to prepare and use commonly available ingredients.
     8.  Prioritize whole foods. If the goal is 'Weight Loss', focus on nutrient-dense, lower-calorie options. If 'Muscle Gain', ensure higher protein content.
+    9.  CRITICAL: Take the user's health conditions into account.
+        - If 'Diabetes' is listed, prioritize low-glycemic index foods and avoid high sugar content.
+        - If 'High Blood Pressure' is listed, suggest low-sodium meals.
+        - If 'Lactose Intolerant' is listed, avoid dairy products or suggest lactose-free alternatives.
+        - Adapt the plan for any other specified allergies or conditions.
 
     Generate a complete 7-day plan in the specified output format.
     `,

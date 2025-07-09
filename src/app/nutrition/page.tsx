@@ -20,10 +20,11 @@ import { Loader2, Utensils, Zap, ShieldAlert, HeartPulse } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { updateWellnessProfile } from './actions';
+import { Textarea } from '@/components/ui/textarea';
 
 const dayIndexToName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
@@ -31,6 +32,7 @@ const wellnessProfileSchema = z.object({
   height: z.coerce.number().positive('Height must be a positive number.'),
   weight: z.coerce.number().positive('Weight must be a positive number.'),
   wellness_goal: z.string().min(1, 'Please select a goal.'),
+  health_conditions: z.string().optional(),
 });
 
 function WellnessProfileForm({ profile, onProfileUpdated }: { profile: Profile | null, onProfileUpdated: () => void }) {
@@ -43,6 +45,7 @@ function WellnessProfileForm({ profile, onProfileUpdated }: { profile: Profile |
             height: profile?.height || undefined,
             weight: profile?.weight || undefined,
             wellness_goal: profile?.wellness_goal || '',
+            health_conditions: profile?.health_conditions || '',
         },
     });
     
@@ -120,6 +123,22 @@ function WellnessProfileForm({ profile, onProfileUpdated }: { profile: Profile |
                                 </FormItem>
                             )}
                         />
+                         <FormField
+                            control={form.control}
+                            name="health_conditions"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Health Conditions or Allergies</FormLabel>
+                                <FormControl>
+                                <Textarea placeholder="e.g., Diabetes, Lactose Intolerant" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                This helps us create a safe and effective diet plan for you.
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
                         <Button type="submit" className="w-full" disabled={isLoading}>
                             {isLoading ? 'Saving...' : 'Save & Generate Plan'}
                         </Button>
@@ -161,6 +180,7 @@ const NutritionPage = () => {
                     height: currentProfile.height!,
                     weight: currentProfile.weight!,
                     wellness_goal: currentProfile.wellness_goal!,
+                    health_conditions: currentProfile.health_conditions || undefined,
                     language: 'English',
                 }),
                 supabase.from('nutrition_log')

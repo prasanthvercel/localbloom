@@ -70,6 +70,7 @@ const analysisPrompt = ai.definePrompt({
         wellness_goal: z.string().optional().nullable(),
         height: z.number().optional().nullable(),
         weight: z.number().optional().nullable(),
+        health_conditions: z.string().optional().nullable(),
     }) },
     output: { schema: z.object({
         isFoodItem: AnalyzeProductImageOutputSchema.shape.isFoodItem,
@@ -85,6 +86,7 @@ const analysisPrompt = ai.definePrompt({
   - User's wellness goal: {{#if wellness_goal}}{{{wellness_goal}}}{{else}}Not specified{{/if}}
   - User's height: {{#if height}}{{{height}}} cm{{else}}Not specified{{/if}}
   - User's weight: {{#if weight}}{{{weight}}} kg{{else}}Not specified{{/if}}
+  - User's Health Conditions: {{#if health_conditions}}{{{health_conditions}}}{{else}}None specified{{/if}}
   
   ANALYSIS STEPS:
   1. First, determine if the image clearly shows a food item. If not, set 'isFoodItem' to false and the other fields to empty strings or null.
@@ -92,9 +94,11 @@ const analysisPrompt = ai.definePrompt({
   3. Provide structured nutritional information for a standard serving size (e.g., 100g) in the 'nutrition' field.
   4. Write a friendly and helpful description (2-4 sentences) about the item. Include a fun fact or a tip on when it's best to eat. DO NOT include nutritional values in the description text itself.
   5. CRITICAL: If the user has provided wellness data, provide personalized advice.
-      - If goal is "Weight Loss", analyze if the food is good for a calorie-deficit diet.
-      - If goal is "Muscle Gain", analyze its protein content and suitability for post-workout.
-      - If goal is "General Health", analyze its overall nutritional benefits.
+      - First, check for health conditions. If a condition makes the food unsuitable (e.g., high sugar for diabetes, dairy for lactose intolerance), this should be the primary advice. For example: "This item is high in sugar and may not be suitable for your diabetic diet."
+      - If no critical health conflicts exist, analyze based on wellness goal:
+        - If goal is "Weight Loss", analyze if the food is good for a calorie-deficit diet.
+        - If goal is "Muscle Gain", analyze its protein content and suitability for post-workout.
+        - If goal is "General Health", analyze its overall nutritional benefits.
       - If no goal is specified, provide general health tips about the food, OR if no user wellness data is provided at all, return an empty string for this field.
       - Keep the advice concise, encouraging, and actionable (1-3 sentences).
   6. The final 'description' and 'personalizedAdvice' fields MUST be translated into the user's requested language: {{{language}}}.
@@ -113,13 +117,13 @@ const analyzeProductImageFlow = ai.defineFlow(
     const cookieStore = cookies();
     const supabase = createClient(cookieStore);
     
-    let profile: { scan_count: number | null, last_scan_date: string | null, height: number | null, weight: number | null, wellness_goal: string | null } | null = null;
+    let profile: { scan_count: number | null, last_scan_date: string | null, height: number | null, weight: number | null, wellness_goal: string | null, health_conditions: string | null } | null = null;
 
     // Only interact with the database if a user is logged in
     if (input.userId) {
         const { data: userProfile, error: fetchError } = await supabase
           .from('profiles')
-          .select('scan_count, last_scan_date, height, weight, wellness_goal')
+          .select('scan_count, last_scan_date, height, weight, wellness_goal, health_conditions')
           .eq('id', input.userId)
           .single();
 
@@ -137,6 +141,7 @@ const analyzeProductImageFlow = ai.defineFlow(
         wellness_goal: profile?.wellness_goal,
         height: profile?.height,
         weight: profile?.weight,
+        health_conditions: profile?.health_conditions,
     });
 
     let foundProducts: z.infer<typeof FoundProductSchema>[] = [];

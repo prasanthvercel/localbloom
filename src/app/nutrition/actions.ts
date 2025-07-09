@@ -45,6 +45,7 @@ const WellnessProfileSchema = z.object({
   height: z.coerce.number().positive('Height must be a positive number.'),
   weight: z.coerce.number().positive('Weight must be a positive number.'),
   wellness_goal: z.string().min(1, 'Please select a goal.'),
+  health_conditions: z.string().optional(),
 });
 
 export type WellnessProfileData = z.infer<typeof WellnessProfileSchema>;
@@ -69,6 +70,7 @@ export async function updateWellnessProfile(data: WellnessProfileData) {
       height: parsedData.data.height,
       weight: parsedData.data.weight,
       wellness_goal: parsedData.data.wellness_goal,
+      health_conditions: parsedData.data.health_conditions,
       updated_at: new Date().toISOString(),
     })
     .eq('id', user.id);

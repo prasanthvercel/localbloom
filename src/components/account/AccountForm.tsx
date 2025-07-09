@@ -11,10 +11,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import type { User } from '@supabase/supabase-js';
 import type { Profile } from '@/types';
-import { Separator } from '../ui/separator';
+import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { HeartPulse } from 'lucide-react';
 
@@ -29,6 +29,7 @@ const profileSchema = z.object({
   height: z.union([z.literal(''), z.coerce.number().positive('Height must be a positive number.')]).optional().nullable(),
   weight: z.union([z.literal(''), z.coerce.number().positive('Weight must be a positive number.')]).optional().nullable(),
   wellness_goal: z.string().optional().nullable(),
+  health_conditions: z.string().optional().nullable(),
 });
 
 interface AccountFormProps {
@@ -55,6 +56,7 @@ export function AccountForm({ user, profile }: AccountFormProps) {
       height: profile?.height || '',
       weight: profile?.weight || '',
       wellness_goal: profile?.wellness_goal || '',
+      health_conditions: profile?.health_conditions || '',
     },
   });
 
@@ -76,6 +78,7 @@ export function AccountForm({ user, profile }: AccountFormProps) {
       height: values.height === '' ? null : values.height,
       weight: values.weight === '' ? null : values.weight,
       wellness_goal: values.wellness_goal || null,
+      health_conditions: values.health_conditions || null,
     };
     
     const { error: profileError } = await supabase
@@ -273,6 +276,22 @@ export function AccountForm({ user, profile }: AccountFormProps) {
                             </FormItem>
                           )}
                         />
+                      <FormField
+                        control={form.control}
+                        name="health_conditions"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Health Conditions or Allergies (Optional)</FormLabel>
+                            <FormControl>
+                              <Textarea placeholder="e.g., Diabetes, Lactose Intolerant, Peanut Allergy" {...field} value={field.value ?? ''} />
+                            </FormControl>
+                            <FormDescription>
+                              List any conditions or allergies so we can provide safer, more tailored advice.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                   </CardContent>
               </Card>
 

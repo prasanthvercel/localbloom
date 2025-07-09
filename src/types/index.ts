@@ -67,6 +67,7 @@ export type Profile = {
     height: number | null; // in cm
     weight: number | null; // in kg
     wellness_goal: string | null;
+    health_conditions: string | null; // e.g., "Diabetes, High Blood Pressure"
 };
 
 export type NutritionLog = {
