@@ -20,8 +20,6 @@ import { SubscriptionPromptDialog } from '@/components/scanner/SubscriptionPromp
 import { Separator } from '@/components/ui/separator';
 import { AddToDietDialog } from '@/components/scanner/AddToDietDialog';
 
-const FREE_SCAN_LIMIT = 3;
-
 export default function ScannerPage() {
   const { toast } = useToast();
   const router = useRouter();
@@ -87,22 +85,15 @@ export default function ScannerPage() {
       
       await getCameraPermission();
         
-      const { data: profile } = await supabase.from('profiles').select('scan_count, last_scan_date, subscription_tier').eq('id', user.id).single();
+      const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
       
       const isSubscribed = profile?.subscription_tier && profile.subscription_tier !== 'free';
 
       if (isSubscribed) {
         setRemainingScans(Infinity); // Subscribed users have unlimited scans
       } else {
-        const today = new Date();
-        const lastScan = profile?.last_scan_date ? new Date(profile.last_scan_date) : null;
-        let scanCount = profile?.scan_count || 0;
-
-        if (lastScan && (lastScan.getMonth() !== today.getMonth() || lastScan.getFullYear() !== today.getFullYear())) {
-            scanCount = 0;
-        }
-
-        setRemainingScans(Math.max(0, FREE_SCAN_LIMIT - scanCount));
+        // Set to 0 to force subscription prompt for testing purposes.
+        setRemainingScans(0);
       }
       setIsInitializing(false);
     };
