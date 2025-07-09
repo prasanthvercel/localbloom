@@ -58,6 +58,7 @@ export default async function VendorPage({ params }: { params: { vendorId: strin
               fill
               className="object-cover"
               data-ai-hint={`${vendor.category} market vendor`}
+              priority
             />
              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
              <div className="absolute bottom-0 left-0 p-6">

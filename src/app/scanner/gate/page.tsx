@@ -52,7 +52,7 @@ export default function ScannerGatePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 my-12">
-          {features.map((feature) => (
+          {features.map((feature, index) => (
             <Card key={feature.title} className="overflow-hidden transform transition-all hover:-translate-y-2 hover:shadow-xl">
                <div className="relative h-48 w-full">
                 <Image
@@ -61,6 +61,7 @@ export default function ScannerGatePage() {
                     fill
                     className="object-cover"
                     data-ai-hint={feature.hint}
+                    priority={index === 0}
                 />
                </div>
                <CardContent className="p-6 text-left">
