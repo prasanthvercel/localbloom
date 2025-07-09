@@ -14,9 +14,13 @@ export async function middleware(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      'Missing Supabase credentials in middleware. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment variables.'
+    // If Supabase credentials aren't provided, we can't do anything auth-related.
+    // We'll log a warning and proceed without any user session handling.
+    // The app will function as if the user is logged out.
+    console.warn(
+      'Missing Supabase credentials in middleware. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY. Skipping auth checks.'
     );
+    return response;
   }
 
   const supabase = createServerClient(

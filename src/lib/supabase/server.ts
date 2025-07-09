@@ -2,14 +2,19 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies, type ReadonlyRequestCookies } from 'next/headers'
 
 export const createClient = (cookieStore: ReadonlyRequestCookies) => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  let supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      'Missing Supabase credentials. Please make sure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in your environment variables. For local development, you can create a .env.local file.'
+     console.warn(
+      'Missing Supabase credentials in server. App will have limited functionality. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
     );
+    // Provide dummy credentials to avoid crashing the app.
+    // The client will fail on actual requests, but UI will render.
+    supabaseUrl = 'http://localhost:54321';
+    supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
   }
+
 
   return createServerClient(
     supabaseUrl,
