@@ -155,7 +155,7 @@ function RelatedProductCard({ product }: { product: ProductWithVendor }) {
           <h4 className="font-semibold text-foreground truncate">{product.name}</h4>
           <p className="text-sm text-muted-foreground">{product.vendorName}</p>
           <div className="flex items-center justify-between mt-2">
-            <p className="text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
+            <p className="text-lg font-bold text-primary">₹{product.price.toFixed(2)}</p>
           </div>
         </CardContent>
       </Card>

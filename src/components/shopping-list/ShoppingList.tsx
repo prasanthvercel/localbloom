@@ -108,12 +108,12 @@ export function ShoppingList({ items }: ShoppingListProps) {
                   </span>
                 </CardTitle>
                  <CardDescription className="mt-1">
-                    <span>Total Estimate: <span className="font-semibold text-primary">${grandTotal.toFixed(2)}</span></span>
+                    <span>Total Estimate: <span className="font-semibold text-primary">₹{grandTotal.toFixed(2)}</span></span>
                     {grandTotal > 0 && (
                         <div className="text-xs text-muted-foreground mt-1 font-medium">
-                            <span className="text-green-600">Bought: ${boughtTotal.toFixed(2)}</span>
+                            <span className="text-green-600">Bought: ₹{boughtTotal.toFixed(2)}</span>
                             <span className="mx-2">|</span>
-                            <span className="text-yellow-600">To Buy: ${remainingTotal.toFixed(2)}</span>
+                            <span className="text-yellow-600">To Buy: ₹{remainingTotal.toFixed(2)}</span>
                         </div>
                     )}
                 </CardDescription>
@@ -162,11 +162,11 @@ export function ShoppingList({ items }: ShoppingListProps) {
                           {item.product_name}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {item.quantity} x ${item.price.toFixed(2)} from {item.vendor_name}
+                          {item.quantity} x ₹{item.price.toFixed(2)} from {item.vendor_name}
                         </div>
                       </div>
                       <div className="font-bold text-lg text-primary">
-                        ${(item.price * item.quantity).toFixed(2)}
+                        ₹{(item.price * item.quantity).toFixed(2)}
                       </div>
                       <Button
                         variant="ghost"

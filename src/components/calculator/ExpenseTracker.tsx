@@ -188,9 +188,9 @@ export function ExpenseTracker({ user, initialExpenses }: ExpenseTrackerProps) {
                 name="amount"
                 render={({ field }) => (
                   <FormItem className="w-full sm:w-40">
-                    <FormLabel>Amount ($)</FormLabel>
+                    <FormLabel>Amount (₹)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder="15.50" {...field} />
+                      <Input type="number" step="0.01" placeholder="150" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -224,7 +224,7 @@ export function ExpenseTracker({ user, initialExpenses }: ExpenseTrackerProps) {
                     {newItems.map((item, index) => (
                       <TableRow key={`new-${index}`} className="bg-primary/10">
                         <TableCell className="font-medium">{item.item_name}</TableCell>
-                        <TableCell className="text-right">${Number(item.amount).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">₹{Number(item.amount).toFixed(2)}</TableCell>
                         <TableCell className="text-center">
                           <Button variant="ghost" size="icon" onClick={() => onRemoveNewItem(index)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
@@ -264,7 +264,7 @@ export function ExpenseTracker({ user, initialExpenses }: ExpenseTrackerProps) {
                       ) : (
                       <TableRow key={item.id}>
                         <TableCell>{item.item_name}</TableCell>
-                        <TableCell className="text-right">${Number(item.amount).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">₹{Number(item.amount).toFixed(2)}</TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center items-center">
                              <Button variant="ghost" size="icon" onClick={() => handleEditClick(item)}>
@@ -285,7 +285,7 @@ export function ExpenseTracker({ user, initialExpenses }: ExpenseTrackerProps) {
         </CardContent>
         <CardFooter className="flex flex-col sm:flex-row items-center justify-between bg-muted/50 p-6 rounded-b-lg">
           <div className="text-lg font-bold">
-            Total for {currentMonth}: <span className="text-primary">${totalExpenses.toFixed(2)}</span>
+            Total for {currentMonth}: <span className="text-primary">₹{totalExpenses.toFixed(2)}</span>
           </div>
           <Button onClick={onSaveExpenses} disabled={isLoading || newItems.length === 0} className="w-full sm:w-auto mt-4 sm:mt-0">
             {isLoading && !editingId ? 'Saving...' : <><Save className="mr-2" /> Save New Expenses</>}

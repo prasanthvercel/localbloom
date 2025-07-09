@@ -38,8 +38,8 @@ export function SubscriptionPromptDialog({ isOpen, setIsOpen }: SubscriptionProm
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="text-sm text-muted-foreground space-y-2 py-4">
-          <p><span className="font-bold text-foreground">Basic Plan:</span> $2.99/month for 100 scans.</p>
-          <p><span className="font-bold text-foreground">Pro Plan:</span> $5.99/month for 300 scans.</p>
+          <p><span className="font-bold text-foreground">Basic Plan:</span> ₹249/month for 100 scans.</p>
+          <p><span className="font-bold text-foreground">Pro Plan:</span> ₹499/month for 300 scans.</p>
         </div>
         <AlertDialogFooter>
           <AlertDialogCancel>Maybe Later</AlertDialogCancel>

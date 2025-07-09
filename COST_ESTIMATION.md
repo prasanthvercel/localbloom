@@ -12,7 +12,7 @@ The primary cost for this feature comes from calls to the Google Gemini API, spe
 
 -   **Gemini Pro Vision**: `$0.0025` per 1,000 characters of input + `$0.0025` per image.
 
-*Note: Prices are subject to change by Google. Please refer to the official Google Cloud AI pricing page for the most up-to-date information.*
+*Note: Prices are subject to change by Google. Please refer to the official Google Cloud AI pricing page for the most up-to-date information. API costs are billed in USD.*
 
 ### Cost Per Scan Calculation
 
@@ -21,7 +21,7 @@ Each "scan" involves one API call with one image and a text prompt.
 -   **Image Cost**: $0.0025 per scan
 -   **Prompt & Output Cost**: The text portion is small, making this cost negligible.
 
-Therefore, we can estimate a safe **cost of $0.003 per scan**.
+Therefore, we can estimate a safe **cost of $0.003 per scan (USD)**.
 
 ## Proposed Freemium & Subscription Model
 
@@ -41,17 +41,17 @@ Once a user exhausts their 3 free scans, they will be prompted to subscribe to o
 
 #### Tier 1: Basic Scanner
 
--   **Price**: $2.99 / month
+-   **Price**: ₹249 / month
 -   **Scans Included**: 100 scans per month
 -   **Cost to Us**: 100 scans * $0.003/scan = $0.30
--   **Gross Margin**: $2.99 - $0.30 = **$2.69 per user/month**
+-   **Gross Margin**: Approx. ₹224 per user/month (depending on conversion rate)
 
 #### Tier 2: Pro Scanner
 
--   **Price**: $5.99 / month
+-   **Price**: ₹499 / month
 -   **Scans Included**: 300 scans per month
 -   **Cost to Us**: 300 scans * $0.003/scan = $0.90
--   **Gross Margin**: $5.99 - $0.90 = **$5.09 per user/month**
+-   **Gross Margin**: Approx. ₹424 per user/month (depending on conversion rate)
 
 ## Conclusion
 

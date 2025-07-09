@@ -85,7 +85,7 @@ export function ProductPurchaseCard({ product, vendor, user }: ProductPurchaseCa
         </Link>
         <CardTitle className="text-2xl lg:text-3xl font-extrabold !mt-1">{product.name}</CardTitle>
         <div className="flex items-baseline gap-2 !mt-2">
-          <p className="text-3xl font-bold text-primary">${product.price.toFixed(2)}</p>
+          <p className="text-3xl font-bold text-primary">₹{product.price.toFixed(2)}</p>
           {product.discount && (
             <Badge variant="outline" className="border-accent text-accent bg-accent/10">
                 <Tag className="h-3 w-3 mr-1" />{product.discount}

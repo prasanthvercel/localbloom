@@ -127,7 +127,7 @@ function ProductCard({ product }: { product: Product }) {
         <CardContent className="p-4 flex flex-col flex-grow">
           <h4 className="font-semibold text-foreground truncate flex-grow">{product.name}</h4>
           <div className="flex items-center justify-between mt-2">
-            <p className="text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
+            <p className="text-lg font-bold text-primary">₹{product.price.toFixed(2)}</p>
             {product.lowPrice && (
               <Badge variant="outline" className="border-green-500 text-green-600 bg-green-500/10 py-0.5 px-1.5 text-xs">
                 <Sparkles className="h-3 w-3 mr-1" />

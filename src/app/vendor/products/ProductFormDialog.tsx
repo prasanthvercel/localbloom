@@ -150,7 +150,7 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProd
                             <div className="space-y-6">
                                 <div className="grid grid-cols-2 gap-4">
                                     <FormField control={form.control} name="price" render={({ field }) => (
-                                        <FormItem><FormLabel>Price ($)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="3.99" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>Price (₹)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="299" {...field} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                     <FormField control={form.control} name="unit" render={({ field }) => (
                                         <FormItem><FormLabel>Unit</FormLabel><FormControl><Input placeholder="kg, lb, piece" {...field} /></FormControl><FormMessage /></FormItem>

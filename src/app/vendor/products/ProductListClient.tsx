@@ -88,7 +88,7 @@ export function ProductListClient({ initialProducts, vendorId }: ProductListClie
                                             </TableCell>
                                             <TableCell className="font-medium">{product.name}</TableCell>
                                             <TableCell>
-                                                ${product.price.toFixed(2)}
+                                                ₹{product.price.toFixed(2)}
                                                 {product.unit && <span className="text-muted-foreground text-xs ml-1">/{product.unit}</span>}
                                             </TableCell>
                                             <TableCell>{product.discount || 'N/A'}</TableCell>

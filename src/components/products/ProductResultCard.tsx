@@ -100,7 +100,7 @@ export function ProductResultCard({ item, user }: ProductResultCardProps) {
             </div>
 
           <div className="p-4 flex flex-col justify-center items-end border-l bg-card flex-shrink-0 w-32 sm:w-40">
-            <p className="text-xl sm:text-2xl font-black text-primary mb-2">${item.price.toFixed(2)}</p>
+            <p className="text-xl sm:text-2xl font-black text-primary mb-2">₹{item.price.toFixed(2)}</p>
             {user && user.user_metadata?.role === 'customer' && (
               <Dialog open={open} onOpenChange={(isOpen) => { setOpen(isOpen); if (!isOpen) setQuantity(1); }}>
                 <DialogTrigger asChild>
@@ -139,7 +139,7 @@ export function ProductResultCard({ item, user }: ProductResultCardProps) {
                           </Button>
                        </div>
                        <div className="text-center text-lg">
-                          Total: <span className="font-bold text-primary">${(item.price * quantity).toFixed(2)}</span>
+                          Total: <span className="font-bold text-primary">₹{(item.price * quantity).toFixed(2)}</span>
                        </div>
                     </div>
                     
