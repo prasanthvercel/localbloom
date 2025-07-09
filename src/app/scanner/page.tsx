@@ -24,6 +24,7 @@ export default function ScannerPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [cameraError, setCameraError] = useState<{ title: string; description: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<{ productName: string; description: string } | null>(null);
   const [language, setLanguage] = useState('English');
@@ -40,6 +41,17 @@ export default function ScannerPage() {
     }
 
     const getCameraPermission = async () => {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        const errorDetails = {
+          title: 'Camera Not Supported',
+          description: 'Your browser does not support camera access. Please try a different browser.',
+        };
+        setCameraError(errorDetails);
+        setHasCameraPermission(false);
+        toast({ variant: 'destructive', ...errorDetails });
+        return;
+      }
+
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         setHasCameraPermission(true);
@@ -49,11 +61,32 @@ export default function ScannerPage() {
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to use this app.',
-        });
+        let errorDetails;
+        if (error instanceof DOMException) {
+          if (error.name === 'NotFoundError') {
+            errorDetails = {
+              title: 'Camera Not Found',
+              description: 'Camera not found. A camera is required to use this feature.',
+            };
+          } else if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+            errorDetails = {
+              title: 'Camera Access Denied',
+              description: 'Please allow camera access in your browser settings to use the scanner.',
+            };
+          } else {
+             errorDetails = {
+              title: 'Camera Error',
+              description: `Could not access the camera: ${error.message}`,
+            };
+          }
+        } else {
+          errorDetails = {
+            title: 'Unexpected Error',
+            description: 'An unexpected error occurred while trying to access the camera.',
+          };
+        }
+        setCameraError(errorDetails);
+        toast({ variant: 'destructive', ...errorDetails });
       }
     };
 
@@ -144,12 +177,12 @@ export default function ScannerPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {hasCameraPermission === false && (
+            {hasCameraPermission === false && cameraError && (
               <Alert variant="destructive">
                 <Camera className="h-4 w-4" />
-                <AlertTitle>Camera Access Required</AlertTitle>
+                <AlertTitle>{cameraError.title}</AlertTitle>
                 <AlertDescription>
-                  This feature needs camera access. Please update your browser permissions and refresh the page.
+                  {cameraError.description}
                 </AlertDescription>
               </Alert>
             )}
