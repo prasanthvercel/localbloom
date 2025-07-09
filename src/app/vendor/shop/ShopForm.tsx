@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -133,7 +132,7 @@ export function ShopForm({ user, vendor }: ShopFormProps) {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a category for your shop" />
-                        </Trigger>
+                        </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {categories.map(cat => (
@@ -183,7 +182,7 @@ export function ShopForm({ user, vendor }: ShopFormProps) {
                 <Separator className="my-8" />
                 <div className="space-y-4 text-center">
                     <div>
-                        <h3 className="text-lg font-semibold flex items-center justify-center gap-2"><QrCode className="text-primary"/> Your Shop QR Code</h3>
+                        <h3 className="text-lg font-semibold flex items-center justify-center gap-2"><QrCode className="text-primary" /> Your Shop QR Code</h3>
                         <p className="text-sm text-muted-foreground">Display this at your stall for customers to scan and shop.</p>
                     </div>
                     <div className="bg-white p-4 inline-block rounded-lg border shadow-sm">
