@@ -82,6 +82,7 @@ export function Header() {
       { href: '/marketplace', label: 'Categories', isDropdown: true },
     ];
     if (userRole === 'customer') {
+      navItemsToDisplay.push({ href: '/scanner', label: 'Scanner' });
       navItemsToDisplay.push({ href: '/calculator', label: 'Calculator' });
     }
   }
