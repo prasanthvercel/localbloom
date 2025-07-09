@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calculator, Home, LayoutGrid, HeartPulse, Camera, User as UserIcon } from 'lucide-react';
+import { Calculator, Home, LayoutGrid, HeartPulse, Camera, User as UserIcon, Building } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -38,7 +38,7 @@ const baseNavItems = [
 const vendorNavItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/vendor/products', label: 'Products', icon: LayoutGrid },
-  { href: '/vendor/shop', label: 'Shop', icon: Calculator, auth: true, role: 'vendor' },
+  { href: '/vendor/shop', label: 'Shop', icon: Building, auth: true, role: 'vendor' },
   { href: '/account', label: 'Profile', icon: UserIcon, auth: true, role: 'vendor' },
 ];
 

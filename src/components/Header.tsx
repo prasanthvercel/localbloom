@@ -189,11 +189,18 @@ export function Header() {
 
         <div className="flex-grow" />
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           {loading ? (
              <Skeleton className="h-10 w-10 rounded-full" />
           ) : user ? (
             <>
+              <Button asChild variant="ghost" className="px-2 md:px-3">
+                <Link href="/account">
+                  <UserIcon className="md:mr-2" />
+                  <span className="hidden md:inline">Account</span>
+                  <span className="sr-only">Account</span>
+                </Link>
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
@@ -213,9 +220,6 @@ export function Header() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                     <Link href="/account" className='cursor-pointer'><UserIcon className="mr-2 h-4 w-4" />Account</Link>
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout} className='cursor-pointer'>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
