@@ -12,8 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import type { Product } from '@/types';
-import { saveProduct, type ProductFormData } from './actions';
-import Image from 'next/image';
+import { saveProduct } from './actions';
+import { ImageUploader } from '@/components/ImageUploader';
 
 interface ProductFormDialogProps {
     isOpen: boolean;
@@ -28,7 +28,7 @@ const formSchema = z.object({
     price: z.coerce.number().positive('Price must be a positive number'),
     unit: z.string().optional(),
     description: z.string().min(10, 'Description must be at least 10 characters'),
-    image: z.string().url('Invalid URL').optional().or(z.literal('')),
+    image: z.any().optional(),
     discount: z.string().optional(),
     sizes: z.string().optional(), 
     colors: z.string().optional(),
@@ -45,14 +45,12 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProd
             price: 0,
             unit: '',
             description: '',
-            image: '',
+            image: null,
             discount: '',
             sizes: '',
             colors: '',
         }
     });
-
-    const imageUrl = form.watch('image');
 
     useEffect(() => {
         if (isOpen) {
@@ -62,14 +60,14 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProd
                     price: product.price,
                     unit: product.unit || '',
                     description: product.description || '',
-                    image: product.image || '',
+                    image: product.image || null,
                     discount: product.discount || '',
                     sizes: product.sizes?.join(', ') || '',
                     colors: product.colors?.join(', ') || '',
                 });
             } else {
                 form.reset({
-                    name: '', price: 0, unit: '', description: '', image: '', discount: '', sizes: '', colors: ''
+                    name: '', price: 0, unit: '', description: '', image: null, discount: '', sizes: '', colors: ''
                 });
             }
         }
@@ -78,12 +76,25 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProd
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         setIsLoading(true);
         
-        const formData: ProductFormData = {
-            ...values,
-            id: product?.id,
-            vendor_id: vendorId,
-        };
+        const formData = new FormData();
+        formData.append('name', values.name);
+        formData.append('price', values.price.toString());
+        formData.append('description', values.description);
+        if (product?.id) {
+            formData.append('id', product.id);
+        }
+        formData.append('vendor_id', vendorId);
+        if (values.unit) formData.append('unit', values.unit);
+        if (values.discount) formData.append('discount', values.discount);
+        if (values.sizes) formData.append('sizes', values.sizes);
+        if (values.colors) formData.append('colors', values.colors);
 
+        if (values.image instanceof File) {
+            formData.append('image', values.image);
+        } else if (typeof values.image === 'string' && values.image) {
+            formData.append('existingImageUrl', values.image);
+        }
+        
         const result = await saveProduct(formData);
 
         if (result.success && result.data) {
@@ -133,17 +144,14 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProd
                                 
                                 <FormField control={form.control} name="image" render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Image URL</FormLabel>
-                                        <FormControl><Input placeholder="https://placehold.co/400x400.png" {...field} /></FormControl>
+                                        <FormLabel>Product Image</FormLabel>
+                                        <FormControl>
+                                            <ImageUploader value={field.value} onChange={field.onChange} />
+                                        </FormControl>
+                                        <FormDescription>Click or drag-and-drop an image here.</FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
-                                
-                                {imageUrl && (
-                                    <div className="rounded-md overflow-hidden border border-muted aspect-video relative bg-muted/20">
-                                        <Image src={imageUrl} alt="Product preview" fill className="object-contain" onError={(e) => e.currentTarget.style.display = 'none'} data-ai-hint="product image" />
-                                    </div>
-                                )}
                             </div>
                             
                             {/* Right Column */}

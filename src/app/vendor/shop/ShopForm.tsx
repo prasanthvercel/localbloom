@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import type { User } from '@supabase/supabase-js';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,12 +19,13 @@ import type { Vendor } from '@/types';
 import { Separator } from '@/components/ui/separator';
 import { QrCode, Printer } from 'lucide-react';
 import QRCode from "react-qr-code";
+import { ImageUploader } from '@/components/ImageUploader';
 
 const shopSchema = z.object({
   name: z.string().min(3, 'Shop name must be at least 3 characters.'),
   category: z.string().min(1, 'Please select a category.'),
   description: z.string().min(10, 'Description must be at least 10 characters long.'),
-  image: z.string().url('Please enter a valid image URL.').optional().or(z.literal('')),
+  image: z.any().optional(),
 });
 
 type ShopFormValues = z.infer<typeof shopSchema>;
@@ -54,18 +56,25 @@ export function ShopForm({ user, vendor }: ShopFormProps) {
       name: vendor?.name || '',
       category: vendor?.category || '',
       description: vendor?.description || '',
-      image: vendor?.image || '',
+      image: vendor?.image || null,
     },
   });
 
   const onSubmit = async (values: ShopFormValues) => {
     setIsLoading(true);
 
-    const result = await updateShopDetails({
-      id: vendor?.id,
-      user_id: user.id,
-      ...values,
-    });
+    const formData = new FormData();
+    formData.append('name', values.name);
+    formData.append('category', values.category);
+    formData.append('description', values.description);
+    
+    if (values.image instanceof File) {
+        formData.append('image', values.image);
+    } else if (typeof values.image === 'string' && values.image) {
+        formData.append('existingImageUrl', values.image);
+    }
+    
+    const result = await updateShopDetails(formData);
     
     if (result.success) {
       toast({
@@ -162,10 +171,15 @@ export function ShopForm({ user, vendor }: ShopFormProps) {
                 name="image"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Shop Banner Image URL</FormLabel>
+                    <FormLabel>Shop Banner Image</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://placehold.co/400x250.png" {...field} />
+                      <ImageUploader 
+                        value={field.value} 
+                        onChange={field.onChange}
+                        className="aspect-[16/6]" 
+                      />
                     </FormControl>
+                    <FormDescription>Recommended aspect ratio: 16:6.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

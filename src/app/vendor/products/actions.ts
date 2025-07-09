@@ -6,44 +6,72 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 
-const productSchema = z.object({
-    id: z.string().uuid().optional(),
+const productActionSchema = z.object({
+    id: z.string().uuid().optional().nullable(),
     vendor_id: z.string().uuid(),
     name: z.string().min(3, 'Name must be at least 3 characters'),
     price: z.coerce.number().positive('Price must be a positive number'),
-    unit: z.string().optional(),
+    unit: z.string().optional().nullable(),
     description: z.string().min(10, 'Description must be at least 10 characters'),
-    image: z.string().url('Invalid URL').optional().or(z.literal('')),
-    discount: z.string().optional(),
-    // For simplicity, we'll take strings for these and split them.
-    // In a real app, you might use a more complex component.
-    sizes: z.string().optional(), 
-    colors: z.string().optional(),
+    discount: z.string().optional().nullable(),
+    sizes: z.string().optional().nullable(), 
+    colors: z.string().optional().nullable(),
 });
 
-export type ProductFormData = z.infer<typeof productSchema>;
-
-export async function saveProduct(formData: ProductFormData) {
+export async function saveProduct(formData: FormData) {
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Unauthorized' };
 
-  const validation = productSchema.safeParse(formData);
+  const rawData = {
+      id: formData.get('id'),
+      vendor_id: formData.get('vendor_id'),
+      name: formData.get('name'),
+      price: formData.get('price'),
+      unit: formData.get('unit'),
+      description: formData.get('description'),
+      discount: formData.get('discount'),
+      sizes: formData.get('sizes'),
+      colors: formData.get('colors'),
+  };
+
+  const validation = productActionSchema.safeParse(rawData);
   if (!validation.success) {
-    return { success: false, error: validation.error.flatten().fieldErrors };
+    return { success: false, error: JSON.stringify(validation.error.flatten().fieldErrors) };
   }
   
   const { id, vendor_id, sizes, colors, ...productData } = validation.data;
+  
+  const imageFile = formData.get('image') as File | null;
+  const existingImageUrl = formData.get('existingImageUrl') as string | null;
+  let imageUrl = existingImageUrl || 'https://placehold.co/400x400.png';
+
+  if (imageFile && imageFile.size > 0) {
+      const filePath = `${vendor_id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
+      const { error: uploadError } = await supabase.storage
+          .from('product_images')
+          .upload(filePath, imageFile);
+
+      if (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          return { success: false, error: `Could not upload image: ${uploadError.message}` };
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from('product_images').getPublicUrl(filePath);
+      imageUrl = publicUrl;
+  } else if (!imageFile && !existingImageUrl) {
+      imageUrl = 'https://placehold.co/400x400.png';
+  }
 
   const dataToUpsert = {
     ...productData,
     vendor_id,
-    id: id || undefined, // Let Supabase generate if it's a new product
+    id: id || undefined,
     sizes: sizes ? sizes.split(',').map(s => s.trim()).filter(Boolean) : null,
     colors: colors ? colors.split(',').map(c => c.trim()).filter(Boolean) : null,
-    image: productData.image || 'https://placehold.co/100x100.png',
+    image: imageUrl,
     updated_at: new Date().toISOString(),
   };
 
@@ -61,6 +89,7 @@ export async function saveProduct(formData: ProductFormData) {
   revalidatePath('/vendor/products');
   return { success: true, data };
 }
+
 
 export async function deleteProduct(productId: string) {
     const cookieStore = cookies();
