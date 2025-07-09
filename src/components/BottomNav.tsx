@@ -32,12 +32,14 @@ const baseNavItems = [
   { href: '/marketplace', label: 'Categories', icon: LayoutGrid },
   { href: '/calculator', label: 'Expenses', icon: Calculator, auth: true, role: 'customer' },
   { href: '/nutrition', label: 'Nutrition', icon: HeartPulse, auth: true, role: 'customer' },
+  { href: '/account', label: 'Profile', icon: UserIcon, auth: true, role: 'customer' },
 ];
 
 const vendorNavItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/vendor/products', label: 'Products', icon: LayoutGrid },
   { href: '/vendor/shop', label: 'Shop', icon: Calculator, auth: true, role: 'vendor' },
+  { href: '/account', label: 'Profile', icon: UserIcon, auth: true, role: 'vendor' },
 ];
 
 const scannerItem = { href: '/scanner', label: 'Scan', icon: Camera };
@@ -78,6 +80,7 @@ export function BottomNav() {
     if (href.includes('scanner')) return pathname.startsWith('/scanner');
     if (href.includes('nutrition')) return pathname.startsWith('/nutrition');
     if (href.includes('calculator')) return pathname.startsWith('/calculator');
+    if (href.includes('account')) return pathname.startsWith('/account');
     return pathname.startsWith(href);
   }
 
@@ -102,7 +105,6 @@ export function BottomNav() {
           {itemsToDisplay.map((item) => (
             <NavItem key={item.href} item={item} isActive={getIsActive(item.href)} />
           ))}
-          <NavItem key="/account" item={{ href: '/account', label: 'Profile', icon: UserIcon }} isActive={getIsActive('/account')} />
         </div>
       </nav>
     );
