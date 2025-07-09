@@ -1,12 +1,13 @@
 
 'use client';
 
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
+import imageCompression from 'browser-image-compression';
 
 interface ImageUploaderProps {
   value: File | string | null;
@@ -16,6 +17,7 @@ interface ImageUploaderProps {
 
 export function ImageUploader({ value, onChange, className }: ImageUploaderProps) {
   const [preview, setPreview] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   useEffect(() => {
     if (typeof value === 'string') {
@@ -29,10 +31,27 @@ export function ImageUploader({ value, onChange, className }: ImageUploaderProps
     }
   }, [value]);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
-      onChange(file);
+      setIsCompressing(true);
+      try {
+        const options = {
+          maxSizeMB: 1, // Max file size 1MB
+          maxWidthOrHeight: 1024, // Max width/height 1024px
+          useWebWorker: true,
+        };
+        console.log('Original image size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+        const compressedFile = await imageCompression(file, options);
+        console.log('Compressed image size:', (compressedFile.size / 1024 / 1024).toFixed(2), 'MB');
+        onChange(compressedFile);
+      } catch (error) {
+        console.error('Image compression failed:', error);
+        // Fallback to the original file if compression fails
+        onChange(file);
+      } finally {
+        setIsCompressing(false);
+      }
     }
   }, [onChange]);
 
@@ -58,7 +77,13 @@ export function ImageUploader({ value, onChange, className }: ImageUploaderProps
       )}
     >
       <input {...getInputProps()} />
-      {preview ? (
+
+      {isCompressing ? (
+         <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground text-center p-4">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="text-sm font-semibold">Optimizing image...</p>
+        </div>
+      ) : preview ? (
         <>
             <Image src={preview} alt="Image preview" fill className="object-cover rounded-md" data-ai-hint="product photo" />
             <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7 z-10" onClick={handleRemove}>
