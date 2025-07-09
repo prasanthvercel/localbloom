@@ -12,27 +12,30 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Skeleton } from './ui/skeleton';
 import { cn } from '@/lib/utils';
-import { vendors } from '@/data/vendors';
 
 export function Header() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<string[]>([]);
   const supabase = createClient();
   const router = useRouter();
   const pathname = usePathname();
 
-  const categories = [...new Set(vendors.map(vendor => vendor.category))];
-
   useEffect(() => {
-    // This listener is called once on mount with the initial session, and then
-    // again whenever the auth state changes. This is the most reliable way
-    // to track the user's session on the client.
+    const fetchCategories = async () => {
+      const { data } = await supabase.from('vendors').select('category');
+      if (data) {
+        const uniqueCategories = [...new Set(data.map(v => v.category).filter(Boolean) as string[])];
+        setCategories(uniqueCategories);
+      }
+    };
+    
+    fetchCategories();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
 
-      // When a user signs in or out, we want to refresh the page to
-      // re-fetch any server-side data that might have changed.
       if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
         router.refresh();
       }
@@ -59,7 +62,6 @@ export function Header() {
 
   const getIsActive = (href: string) => {
     if (href === '/') return pathname === '/';
-    // For marketplace, we want an exact match, not startsWith, to avoid it being active on product pages
     if (href === '/marketplace') return pathname === '/marketplace';
     return pathname.startsWith(href);
   }

@@ -4,7 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
-import type { Vendor } from '@/data/vendors';
+import type { Vendor } from '@/types';
 
 type VendorUpdateData = {
   id?: string;
@@ -44,5 +44,7 @@ export async function updateShopDetails(details: VendorUpdateData) {
   }
 
   revalidatePath('/vendor/shop');
+  revalidatePath('/');
+  revalidatePath('/vendor/[vendorId]', 'page');
   return { success: true };
 }

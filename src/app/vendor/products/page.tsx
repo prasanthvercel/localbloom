@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { cookies } from 'next/headers';
-import type { Product } from '@/data/vendors';
+import type { Product } from '@/types';
 import { ProductListClient } from './ProductListClient';
 
 export default async function VendorProductsPage() {
@@ -45,7 +45,7 @@ export default async function VendorProductsPage() {
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
          <ProductListClient 
-            initialProducts={products || []} 
+            initialProducts={(products as Product[]) || []} 
             vendorId={vendor.id} 
          />
       </main>

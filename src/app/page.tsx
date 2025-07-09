@@ -3,16 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import type { User } from '@supabase/supabase-js';
 import { VendorDashboardPage } from '@/components/vendor/VendorDashboardPage';
-
-export type ShoppingListItem = {
-  id: number;
-  product_name: string;
-  vendor_name: string;
-  price: number;
-  quantity: number;
-  image_url: string;
-  bought: boolean;
-};
+import type { ShoppingListItem } from './shopping-list/page';
+import type { Vendor } from '@/types';
 
 export default async function Home() {
   const cookieStore = cookies();
@@ -22,6 +14,15 @@ export default async function Home() {
   if (user && user.user_metadata?.role === 'vendor') {
     return <VendorDashboardPage user={user} />;
   }
+
+  // Fetch vendors and categories for the customer dashboard
+  const { data: featuredVendors } = await supabase
+    .from('vendors')
+    .select('*')
+    .limit(3);
+
+  const { data: allVendors } = await supabase.from('vendors').select('category');
+  const categories = [...new Set(allVendors?.map(v => v.category).filter(Boolean) as string[])];
 
   // Default to customer/guest view
   let shoppingListItems: ShoppingListItem[] = [];
@@ -33,5 +34,12 @@ export default async function Home() {
     shoppingListItems = data || [];
   }
 
-  return <DashboardPage user={user as User | null} shoppingListItems={shoppingListItems} />;
+  return (
+    <DashboardPage 
+      user={user as User | null} 
+      shoppingListItems={shoppingListItems} 
+      featuredVendors={(featuredVendors as Vendor[]) || []}
+      categories={categories || []}
+    />
+  );
 }

@@ -2,8 +2,9 @@ import { Header } from '@/components/Header';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Leaf, Cake, Paintbrush, Utensils, Shirt, ArrowLeft } from 'lucide-react';
-import { vendors as allVendors } from '@/data/vendors';
 import type { ElementType } from 'react';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
 const categoryIcons: { [key: string]: ElementType } = {
   Produce: Leaf,
@@ -13,8 +14,12 @@ const categoryIcons: { [key: string]: ElementType } = {
   Clothing: Shirt,
 };
 
-export default function MarketplacePage() {
-    const categories = [...new Set(allVendors.map(vendor => vendor.category))];
+export default async function MarketplacePage() {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+
+    const { data: vendors, error } = await supabase.from('vendors').select('category');
+    const categories = [...new Set(vendors?.map(vendor => vendor.category).filter(Boolean) as string[])];
 
     return (
         <div className="flex flex-col min-h-screen bg-secondary/30">

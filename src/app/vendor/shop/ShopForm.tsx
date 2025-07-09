@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,7 +15,10 @@ import type { User } from '@supabase/supabase-js';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { updateShopDetails } from './actions';
-import type { Vendor } from '@/data/vendors';
+import type { Vendor } from '@/types';
+import { Separator } from '@/components/ui/separator';
+import { QrCode, Printer } from 'lucide-react';
+import QRCode from "react-qr-code";
 
 const shopSchema = z.object({
   name: z.string().min(3, 'Shop name must be at least 3 characters.'),
@@ -37,6 +40,14 @@ export function ShopForm({ user, vendor }: ShopFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [shopUrl, setShopUrl] = useState('');
+
+  useEffect(() => {
+    // Ensure window is defined (runs only on client)
+    if (typeof window !== 'undefined' && vendor?.id) {
+      setShopUrl(`${window.location.origin}/vendor/${vendor.id}`);
+    }
+  }, [vendor?.id]);
 
   const form = useForm<ShopFormValues>({
     resolver: zodResolver(shopSchema),
@@ -52,7 +63,7 @@ export function ShopForm({ user, vendor }: ShopFormProps) {
     setIsLoading(true);
 
     const result = await updateShopDetails({
-      id: vendor?.id, // Can be undefined for new vendors
+      id: vendor?.id,
       user_id: user.id,
       ...values,
     });
@@ -62,7 +73,7 @@ export function ShopForm({ user, vendor }: ShopFormProps) {
         title: 'Shop Updated',
         description: 'Your shop details have been saved successfully.',
       });
-      router.push('/vendor/products'); // Go to next step
+      router.push('/vendor/products');
       router.refresh();
     } else {
       toast({
@@ -78,8 +89,18 @@ export function ShopForm({ user, vendor }: ShopFormProps) {
   const isNewVendor = !vendor?.name;
 
   return (
-    <div className="flex items-center justify-center py-12 px-4">
-      <Card className="w-full max-w-2xl">
+    <div className="flex items-center justify-center py-12 px-4 print:py-0 print:px-0">
+      <div id="qr-code-section" className="hidden print:block text-center p-8">
+          <h2 className="text-2xl font-bold mb-2">{vendor?.name}</h2>
+          <p className="text-muted-foreground mb-4">Scan to visit our online shop!</p>
+          {shopUrl && (
+            <div className="bg-white p-4 inline-block rounded-lg shadow-lg">
+                <QRCode value={shopUrl} size={256} />
+            </div>
+          )}
+      </div>
+
+      <Card className="w-full max-w-2xl print:hidden">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">{isNewVendor ? 'Set Up Your Shop' : 'Manage Your Shop'}</CardTitle>
           <CardDescription>
@@ -112,7 +133,7 @@ export function ShopForm({ user, vendor }: ShopFormProps) {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a category for your shop" />
-                        </SelectTrigger>
+                        </Trigger>
                       </FormControl>
                       <SelectContent>
                         {categories.map(cat => (
@@ -156,6 +177,28 @@ export function ShopForm({ user, vendor }: ShopFormProps) {
               </Button>
             </form>
           </Form>
+
+           {!isNewVendor && shopUrl && (
+            <>
+                <Separator className="my-8" />
+                <div className="space-y-4 text-center">
+                    <div>
+                        <h3 className="text-lg font-semibold flex items-center justify-center gap-2"><QrCode className="text-primary"/> Your Shop QR Code</h3>
+                        <p className="text-sm text-muted-foreground">Display this at your stall for customers to scan and shop.</p>
+                    </div>
+                    <div className="bg-white p-4 inline-block rounded-lg border shadow-sm">
+                        <QRCode value={shopUrl} size={128} />
+                    </div>
+                    <div>
+                        <Button variant="outline" onClick={() => window.print()}>
+                            <Printer className="mr-2 h-4 w-4" />
+                            Print QR Code
+                        </Button>
+                    </div>
+                </div>
+            </>
+          )}
+
         </CardContent>
       </Card>
     </div>

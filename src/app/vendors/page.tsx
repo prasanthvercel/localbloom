@@ -1,11 +1,16 @@
 import { Header } from '@/components/Header';
-import { MapPlaceholder } from '@/components/MapPlaceholder';
 import { VendorGrid } from '@/components/marketplace/VendorGrid';
-import { vendors as allVendors } from '@/data/vendors';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
+import type { Vendor } from '@/types';
 
-export default function VendorsPage() {
+export default async function VendorsPage() {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const { data: vendors, error } = await supabase.from('vendors').select('*');
+
     return (
         <div className="flex flex-col min-h-screen bg-secondary/30">
             <Header />
@@ -24,15 +29,8 @@ export default function VendorsPage() {
                         Discover all the talented local vendors and what they have to offer.
                     </p>
                     
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-2">
-                            <VendorGrid vendors={allVendors} />
-                        </div>
-                        <div className="lg:col-span-1">
-                            <div className="sticky top-24">
-                                <MapPlaceholder vendors={allVendors} />
-                            </div>
-                        </div>
+                    <div className="lg:col-span-2">
+                        <VendorGrid vendors={(vendors as Vendor[]) || []} />
                     </div>
                 </div>
             </main>

@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import type { Product } from '@/data/vendors';
+import type { Product } from '@/types';
 import { saveProduct, type ProductFormData } from './actions';
 import Image from 'next/image';
 
@@ -61,8 +61,8 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProd
                     name: product.name,
                     price: product.price,
                     unit: product.unit || '',
-                    description: product.description,
-                    image: product.image,
+                    description: product.description || '',
+                    image: product.image || '',
                     discount: product.discount || '',
                     sizes: product.sizes?.join(', ') || '',
                     colors: product.colors?.join(', ') || '',

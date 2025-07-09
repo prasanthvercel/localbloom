@@ -2,7 +2,6 @@
 'use client'
 
 import React, { useState } from 'react';
-import type { Product } from '@/data/vendors';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,6 +10,7 @@ import { MoreHorizontal, PlusCircle, Trash, Pencil } from 'lucide-react';
 import Image from 'next/image';
 import { ProductFormDialog } from './ProductFormDialog';
 import { DeleteProductDialog } from './DeleteProductDialog';
+import type { Product } from '@/types';
 
 interface ProductListClientProps {
   initialProducts: Product[];

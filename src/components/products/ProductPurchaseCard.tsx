@@ -6,18 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Star, Store, PlusCircle, MinusCircle, Tag } from 'lucide-react';
+import { Store, PlusCircle, MinusCircle, Tag } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { addItemToShoppingList } from '@/app/shopping-list/actions';
 import type { User } from '@supabase/supabase-js';
-import type { Vendor } from '@/data/vendors';
+import type { Vendor, ProductWithVendor as ProductWithVendorType } from '@/types';
 import { Input } from '../ui/input';
-import type { ProductWithVendor } from '@/app/products/[productId]/page';
 
 interface ProductPurchaseCardProps {
-  product: ProductWithVendor;
+  product: ProductWithVendorType;
   vendor: Vendor;
   user: User | null;
 }
@@ -54,8 +53,8 @@ export function ProductPurchaseCard({ product, vendor, user }: ProductPurchaseCa
     formData.append('productName', productName);
     formData.append('price', product.price.toString());
     formData.append('quantity', quantity.toString());
-    formData.append('vendorName', vendor.name);
-    formData.append('imageUrl', product.image);
+    formData.append('vendorName', vendor.name || 'Local Vendor');
+    formData.append('imageUrl', product.image || 'https://placehold.co/100x100.png');
     
     const result = await addItemToShoppingList(formData);
 
@@ -82,10 +81,6 @@ export function ProductPurchaseCard({ product, vendor, user }: ProductPurchaseCa
           <div className="flex items-center gap-2">
             <Store className="h-4 w-4" />
             <span>{vendor.name}</span>
-            <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
-              <span className="text-xs">{vendor.rating.toFixed(1)}</span>
-            </div>
           </div>
         </Link>
         <CardTitle className="text-2xl lg:text-3xl font-extrabold !mt-1">{product.name}</CardTitle>

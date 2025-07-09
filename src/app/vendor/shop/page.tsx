@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { ShopForm } from './ShopForm';
 import { cookies } from 'next/headers';
-import type { Vendor } from '@/data/vendors';
+import type { Vendor } from '@/types';
 
 export default async function ShopSettingsPage() {
   const cookieStore = cookies();

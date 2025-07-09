@@ -2,37 +2,42 @@ import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import type { User } from '@supabase/supabase-js';
 import { ProductResults } from '@/components/products/ProductResults';
-import { vendors as allVendors } from '@/data/vendors';
-import type { ProductWithVendor } from '@/components/ProductResultCard';
-import type { ShoppingListItem } from '@/app/page';
+import type { ProductWithVendor } from '@/types';
+import type { ShoppingListItem } from '@/app/shopping-list/page';
 
-function getProducts(category?: string, query?: string): ProductWithVendor[] {
+async function getProducts(supabase: ReturnType<typeof createClient>, category?: string, query?: string): Promise<ProductWithVendor[]> {
   const lowercasedQuery = query?.toLowerCase().trim() ?? '';
-  let results: ProductWithVendor[] = [];
+  let productQuery = supabase.from('products').select('*, vendors(id, name, category)');
 
-  allVendors.forEach(vendor => {
-    // Filter vendors by category if provided
-    if (category && vendor.category.toLowerCase() !== category.toLowerCase()) {
-      return;
-    }
+  if (category) {
+    const { data: vendors, error: vendorError } = await supabase
+      .from('vendors')
+      .select('id')
+      .eq('category', category);
+    
+    if (vendorError || !vendors || vendors.length === 0) return [];
+    
+    const vendorIds = vendors.map(v => v.id);
+    productQuery = productQuery.in('vendor_id', vendorIds);
+  }
 
-    vendor.products.forEach(product => {
-      const productName = product.name.toLowerCase();
-      // Filter products by search query if provided
-      if (lowercasedQuery === '' || productName.includes(lowercasedQuery)) {
-        results.push({
-          ...product,
-          vendorId: vendor.id,
-          vendorName: vendor.name,
-          vendorRating: vendor.rating,
-          lowPrice: false, // Default to false
-        });
-      }
-    });
-  });
+  if (lowercasedQuery !== '') {
+    productQuery = productQuery.ilike('name', `%${lowercasedQuery}%`);
+  }
 
-  // Sort by price (ascending)
-  results.sort((a, b) => a.price - b.price);
+  const { data: productsData, error } = await productQuery.order('price', { ascending: true });
+
+  if (error || !productsData) {
+    console.error('Error fetching products:', error);
+    return [];
+  }
+
+  const results: ProductWithVendor[] = productsData.map(p => ({
+    ...p,
+    vendorId: p.vendors?.id || '',
+    vendorName: p.vendors?.name || 'Unknown Vendor',
+    lowPrice: false, // Default to false
+  }));
 
   // If there was a search query, mark the items with the lowest price
   if (lowercasedQuery !== '' && results.length > 0) {
@@ -59,7 +64,7 @@ export default async function ProductsPage({
   const category = typeof searchParams.category === 'string' ? searchParams.category : undefined;
   const searchQuery = typeof searchParams.q === 'string' ? searchParams.q : undefined;
   
-  const products = getProducts(category, searchQuery);
+  const products = await getProducts(supabase, category, searchQuery);
 
   let shoppingListItems: ShoppingListItem[] = [];
   if (user) {

@@ -1,4 +1,3 @@
-import { vendors, type Product, type Vendor } from '@/data/vendors';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -9,80 +8,86 @@ import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { Card, CardContent } from '@/components/ui/card';
 import type { User } from '@supabase/supabase-js';
+import type { Product, Vendor, ProductWithVendor } from '@/types';
 
-export type ProductWithVendor = Product & {
-  vendorId: string;
-  vendorName: string;
-  vendorRating: number;
-};
+async function getProductDetails(productId: string) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  
+  const { data: productData, error } = await supabase
+    .from('products')
+    .select('*, vendors (id, name, category, description)')
+    .eq('id', productId)
+    .single();
 
-// Helper to find product and its vendor
-function getProductDetails(productId: string): { product: ProductWithVendor; vendor: Vendor } | null {
-  for (const vendor of vendors) {
-    for (const product of vendor.products) {
-      if (product.id === productId) {
-        return { 
-          product: {
-            ...product,
-            vendorId: vendor.id,
-            vendorName: vendor.name,
-            vendorRating: vendor.rating,
-          }, 
-          vendor 
-        };
-      }
-    }
-  }
-  return null;
-}
-
-// Helper to get related products
-function getRelatedProducts(currentProduct: Product, currentVendor: Vendor): ProductWithVendor[] {
-  // Logic: other products from the same category, excluding the current one
-  const related: ProductWithVendor[] = [];
-  const currentCategory = vendors.find(v => v.id === currentVendor.id)?.category;
-
-  if (!currentCategory) return [];
-
-  for (const vendor of vendors) {
-    // Look in same category, but give preference to different vendors for variety
-    if (vendor.category === currentCategory) {
-      for (const product of vendor.products) {
-        if (product.id !== currentProduct.id) {
-          related.push({
-             ...product,
-            vendorId: vendor.id,
-            vendorName: vendor.name,
-            vendorRating: vendor.rating,
-          });
-        }
-      }
-    }
+  if (error || !productData) {
+    console.error('Error fetching product:', error);
+    return null;
   }
   
-  // Return a shuffled slice of the first 4 related products
-  return related.sort(() => 0.5 - Math.random()).slice(0, 4);
+  const { vendors: vendorData, ...product } = productData;
+
+  if (!vendorData) return null;
+
+  return {
+    product: {
+      ...product,
+      vendorId: vendorData.id,
+      vendorName: vendorData.name || 'Unknown Vendor',
+    } as ProductWithVendor,
+    vendor: vendorData as Vendor
+  };
+}
+
+async function getRelatedProducts(currentProduct: Product, currentVendor: Vendor) {
+  if (!currentVendor?.category) return [];
+
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  
+  // Find other vendors in the same category
+  const { data: vendorsInCategory, error: vendorError } = await supabase
+    .from('vendors')
+    .select('id')
+    .eq('category', currentVendor.category);
+
+  if (vendorError || !vendorsInCategory) return [];
+
+  const vendorIds = vendorsInCategory.map(v => v.id);
+
+  // Fetch products from those vendors, excluding the current one
+  const { data: relatedProductsData, error: productsError } = await supabase
+    .from('products')
+    .select('*, vendors(id, name)')
+    .in('vendor_id', vendorIds)
+    .neq('id', currentProduct.id)
+    .limit(4);
+  
+  if (productsError) return [];
+  
+  return (relatedProductsData?.map(p => ({
+    ...p,
+    vendorId: p.vendors?.id || '',
+    vendorName: p.vendors?.name || 'Unknown',
+  })) || []) as ProductWithVendor[];
 }
 
 export async function generateStaticParams() {
-  const paths: { productId: string }[] = [];
-  vendors.forEach(vendor => {
-    vendor.products.forEach(product => {
-      paths.push({ productId: product.id });
-    });
-  });
-  return paths;
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  const { data: products } = await supabase.from('products').select('id');
+  return products?.map(({ id }) => ({ productId: id })) || [];
 }
 
 export default async function ProductDetailPage({ params }: { params: { productId: string } }) {
-  const details = getProductDetails(params.productId);
+  const details = await getProductDetails(params.productId);
 
   if (!details) {
     notFound();
   }
 
   const { product, vendor } = details;
-  const relatedProducts = getRelatedProducts(product, vendor);
+  const relatedProducts = await getRelatedProducts(product, vendor);
 
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
@@ -105,7 +110,7 @@ export default async function ProductDetailPage({ params }: { params: { productI
             <Card className="overflow-hidden shadow-lg">
               <div className="relative aspect-square w-full">
                 <Image
-                  src={product.image}
+                  src={product.image || 'https://placehold.co/600x600.png'}
                   alt={product.name}
                   fill
                   className="object-cover"
@@ -144,7 +149,7 @@ function RelatedProductCard({ product }: { product: ProductWithVendor }) {
     <Link href={`/products/${product.id}`} className="block group">
       <Card className="h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1">
         <div className="relative">
-          <Image src={product.image} alt={product.name} width={400} height={400} className="w-full h-48 object-cover group-hover:scale-105 transition-transform" data-ai-hint="product food" />
+          <Image src={product.image || 'https://placehold.co/400x400.png'} alt={product.name} width={400} height={400} className="w-full h-48 object-cover group-hover:scale-105 transition-transform" data-ai-hint="product food" />
         </div>
         <CardContent className="p-4">
           <h4 className="font-semibold text-foreground truncate">{product.name}</h4>

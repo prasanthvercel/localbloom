@@ -1,32 +1,43 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { vendors, type Product } from '@/data/vendors';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Clock, MapPin as MapPinIcon, Star, Sparkles, Tag } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin as MapPinIcon, Sparkles, Tag, Shirt } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Header } from '@/components/Header';
-import { Separator } from '@/components/ui/separator';
-import { ReviewCount } from '@/components/vendor/ReviewCount';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
+import type { Vendor, Product } from '@/types';
 
 export async function generateStaticParams() {
-  return vendors.map((vendor) => ({
-    vendorId: vendor.id,
-  }));
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  const { data: vendors } = await supabase.from('vendors').select('id');
+  return vendors?.map(vendor => ({ vendorId: vendor.id })) || [];
 }
 
-function getVendor(vendorId: string) {
-  const vendor = vendors.find((v) => v.id === vendorId);
-  if (!vendor) {
-    notFound();
+async function getVendor(vendorId: string): Promise<Vendor | null> {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  const { data: vendor, error } = await supabase
+    .from('vendors')
+    .select('*, products(*)')
+    .eq('id', vendorId)
+    .single();
+  
+  if (error || !vendor) {
+    return null;
   }
-  return vendor;
+  return vendor as Vendor;
 }
 
 export default async function VendorPage({ params }: { params: { vendorId: string } }) {
-  const vendor = getVendor(params.vendorId);
+  const vendor = await getVendor(params.vendorId);
+
+  if (!vendor) {
+    notFound();
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-secondary/50">
@@ -42,21 +53,16 @@ export default async function VendorPage({ params }: { params: { vendorId: strin
         <Card className="overflow-hidden mb-8 shadow-lg">
           <div className="relative h-64 w-full">
             <Image
-              src={vendor.image}
-              alt={vendor.name}
+              src={vendor.image || 'https://placehold.co/400x250.png'}
+              alt={vendor.name || 'Vendor'}
               fill
               className="object-cover"
               data-ai-hint={`${vendor.category} market vendor`}
             />
              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
              <div className="absolute bottom-0 left-0 p-6">
-                <Badge variant="secondary" className="mb-2">{vendor.category}</Badge>
+                {vendor.category && <Badge variant="secondary" className="mb-2">{vendor.category}</Badge>}
                 <h1 className="text-4xl font-extrabold tracking-tight text-white font-headline">{vendor.name}</h1>
-                <div className="flex items-center gap-2 mt-2 text-amber-300">
-                    <Star className="h-5 w-5 fill-current" />
-                    <span className="font-bold text-white">{vendor.rating.toFixed(1)}</span>
-                    <ReviewCount />
-                </div>
              </div>
           </div>
           <CardContent className="p-6">
@@ -65,17 +71,20 @@ export default async function VendorPage({ params }: { params: { vendorId: strin
         </Card>
 
         <Tabs defaultValue="products" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="info">Info</TabsTrigger>
-            <TabsTrigger value="reviews">Reviews</TabsTrigger>
           </TabsList>
           
           <TabsContent value="products" className="mt-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {vendor.products.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
+              {vendor.products && vendor.products.length > 0 ? (
+                vendor.products.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))
+              ) : (
+                <p className="text-muted-foreground col-span-full text-center py-8">This vendor hasn't added any products yet.</p>
+              )}
             </div>
           </TabsContent>
 
@@ -84,9 +93,7 @@ export default async function VendorPage({ params }: { params: { vendorId: strin
               <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="text-lg font-semibold mb-3 font-headline flex items-center"><Clock className="mr-2 h-5 w-5 text-primary" /> Hours</h3>
-                  <ul className="space-y-1 text-muted-foreground">
-                    {vendor.hours.map(h => <li key={h.day}><span className="font-medium text-foreground">{h.day}:</span> {h.time}</li>)}
-                  </ul>
+                  <p className="text-muted-foreground">Market hours are typically Saturdays from 8 AM to 2 PM.</p>
                 </div>
                  <div>
                   <h3 className="text-lg font-semibold mb-3 font-headline flex items-center"><MapPinIcon className="mr-2 h-5 w-5 text-primary" /> Location</h3>
@@ -96,18 +103,6 @@ export default async function VendorPage({ params }: { params: { vendorId: strin
                    </div>
                 </div>
               </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="reviews" className="mt-6">
-             <Card>
-                <CardHeader>
-                    <CardTitle>Customer Reviews</CardTitle>
-                    <CardDescription>See what others are saying about {vendor.name}.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground">Reviews are not yet available.</p>
-                </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
@@ -122,7 +117,7 @@ function ProductCard({ product }: { product: Product }) {
     <Link href={`/products/${product.id}`} className="block h-full group">
       <Card className="overflow-hidden flex flex-col h-full group">
         <div className="relative">
-          <Image src={product.image} alt={product.name} width={200} height={200} className="w-full h-40 object-cover group-hover:scale-105 transition-transform" data-ai-hint="produce food" />
+          <Image src={product.image || 'https://placehold.co/200x200.png'} alt={product.name} width={200} height={200} className="w-full h-40 object-cover group-hover:scale-105 transition-transform" data-ai-hint="produce food" />
           {product.discount && (
             <Badge className="absolute top-2 right-2 bg-accent text-accent-foreground">
               <Tag className="h-3 w-3 mr-1" />{product.discount}

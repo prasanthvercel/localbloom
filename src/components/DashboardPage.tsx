@@ -6,9 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
-import { vendors as allVendors } from '@/data/vendors';
 import type { User } from '@supabase/supabase-js';
-import type { ShoppingListItem } from '@/app/page';
 import { ShoppingList } from './shopping-list/ShoppingList';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -17,10 +15,14 @@ import { Search as SearchIcon, Leaf, Cake, Paintbrush, Utensils, Shirt, ArrowRig
 import { VendorCard } from './VendorCard';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import Autoplay from "embla-carousel-autoplay"
+import type { Vendor } from '@/types';
+import type { ShoppingListItem } from '@/app/shopping-list/page';
 
 interface DashboardPageProps {
     user: User | null;
     shoppingListItems: ShoppingListItem[];
+    featuredVendors: Vendor[];
+    categories: string[];
 }
 
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -31,10 +33,8 @@ const categoryIcons: { [key: string]: React.ElementType } = {
   Clothing: Shirt,
 };
 
-export function DashboardPage({ user, shoppingListItems }: DashboardPageProps) {
+export function DashboardPage({ user, shoppingListItems, featuredVendors, categories }: DashboardPageProps) {
   const router = useRouter();
-  const categories = [...new Set(allVendors.map(vendor => vendor.category))];
-  const featuredVendors = allVendors.slice(0, 3);
   
   const plugin = React.useRef(
     Autoplay({ delay: 3000, stopOnInteraction: true, stopOnMouseEnter: true })

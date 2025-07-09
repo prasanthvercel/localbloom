@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import type { Product } from '@/data/vendors';
+import type { Product } from '@/types';
 import { deleteProduct } from './actions';
 
 interface DeleteProductDialogProps {
