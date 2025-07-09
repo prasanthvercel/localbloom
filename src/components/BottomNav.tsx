@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Calculator, Home, LayoutGrid, HeartPulse, Camera, User as UserIcon, Building } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
@@ -47,12 +47,29 @@ const scannerGateItem = { href: '/scanner/gate', label: 'Scan', icon: Camera };
 
 export function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<Partial<Profile> | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      if (user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('role, subscription_tier')
+          .eq('id', user.id)
+          .single();
+        setProfile(profileData);
+      }
+      setLoading(false);
+    };
+
+    fetchUser();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);

@@ -25,15 +25,29 @@ export function Header() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      const { data } = await supabase.from('vendors').select('category');
-      if (data) {
-        const uniqueCategories = [...new Set(data.map(v => v.category).filter(Boolean) as string[])];
+    const fetchInitialData = async () => {
+      // Fetch categories
+      const { data: categoriesData } = await supabase.from('vendors').select('category');
+      if (categoriesData) {
+        const uniqueCategories = [...new Set(categoriesData.map(v => v.category).filter(Boolean) as string[])];
         setCategories(uniqueCategories);
       }
+      
+      // Fetch initial user and profile
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      if (user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('subscription_tier')
+          .eq('id', user.id)
+          .single();
+        setProfile(profileData);
+      }
+      setLoading(false);
     };
-    
-    fetchCategories();
+
+    fetchInitialData();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const currentUser = session?.user ?? null;
@@ -89,6 +103,7 @@ export function Header() {
     if (href.includes('/scanner')) return pathname.startsWith('/scanner');
     if (href.includes('/nutrition')) return pathname.startsWith('/nutrition');
     if (href.includes('/calculator')) return pathname.startsWith('/calculator');
+    if (href.includes('/account')) return pathname.startsWith('/account');
     return pathname.startsWith(href);
   }
 
