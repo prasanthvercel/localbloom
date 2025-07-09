@@ -1,23 +1,23 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Camera, ScanLine, Sparkles, Languages, Info } from 'lucide-react';
-import { analyzeProductImage } from '@/ai/flows/analyze-product-image-flow';
+import { analyzeProductImage, type AnalyzeProductImageOutput } from '@/ai/flows/analyze-product-image-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { SubscriptionPromptDialog } from '@/components/scanner/SubscriptionPromptDialog';
-import Link from 'next/link';
+import { Separator } from '@/components/ui/separator';
 
 export default function ScannerPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const supabase = createClient();
   
@@ -32,7 +32,7 @@ export default function ScannerPage() {
   
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [cameraError, setCameraError] = useState<{ title: string; description: string } | null>(null);
-  const [analysisResult, setAnalysisResult] = useState<{ productName: string; description: string } | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalyzeProductImageOutput | null>(null);
   const [language, setLanguage] = useState('English');
 
   useEffect(() => {
@@ -115,8 +115,9 @@ export default function ScannerPage() {
 
     try {
       const result = await analyzeProductImage({ photoDataUri, language, userId: user.id });
+      setAnalysisResult(result);
+
       if (result.isFoodItem) {
-        setAnalysisResult({ productName: result.productName, description: result.description });
         setRemainingScans(prev => Math.max(0, prev - 1));
         toast({ title: 'Analysis Complete!', description: `Identified: ${result.productName}.` });
       } else {
@@ -129,12 +130,6 @@ export default function ScannerPage() {
       setIsLoading(false);
     }
   };
-
-  const searchForProduct = () => {
-    if (analysisResult) {
-        router.push(`/products?q=${encodeURIComponent(analysisResult.productName)}`);
-    }
-  }
 
   const renderContent = () => {
     if (isCheckingUsage) {
@@ -215,14 +210,45 @@ export default function ScannerPage() {
             <CardContent className="space-y-6">
               {renderContent()}
 
-              {analysisResult && (
+              {analysisResult && analysisResult.isFoodItem && (
                   <Card className="bg-muted/50">
                       <CardHeader>
                           <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary"/> Analysis Result</CardTitle>
                           <CardDescription>Product identified as: <span className="font-bold text-foreground">{analysisResult.productName}</span></CardDescription>
                       </CardHeader>
                       <CardContent><p className="text-sm">{analysisResult.description}</p></CardContent>
-                      <CardFooter><Button onClick={searchForProduct} className="w-full">Search for this product</Button></CardFooter>
+                      
+                       <Separator className="my-0" />
+                       <div className="px-6 py-4">
+                        <h3 className="mb-4 text-lg font-semibold leading-none tracking-tight">Price Comparison</h3>
+                        {analysisResult.foundProducts.length > 0 ? (
+                          <div className="space-y-3">
+                            {analysisResult.foundProducts.map((product) => (
+                              <Link href={`/products/${product.id}`} key={product.id} className="block group">
+                                <div className="flex items-center gap-4 rounded-lg border bg-card p-3 transition-all hover:border-primary/50 hover:shadow-sm">
+                                  <Image 
+                                    src={product.image || 'https://placehold.co/100x100.png'} 
+                                    alt={product.name} 
+                                    width={48} 
+                                    height={48}
+                                    className="rounded-md object-cover border"
+                                    data-ai-hint="product photo"
+                                  />
+                                  <div className="flex-grow">
+                                    <p className="font-semibold text-card-foreground group-hover:text-primary">{product.name}</p>
+                                    <p className="text-sm text-muted-foreground">{product.vendorName}</p>
+                                  </div>
+                                  <div className="text-lg font-bold text-primary">₹{product.price.toFixed(2)}</div>
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                              Could not find a matching product in the marketplace.
+                          </p>
+                        )}
+                      </div>
                   </Card>
               )}
             </CardContent>

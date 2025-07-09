@@ -1,8 +1,8 @@
 'use server';
 /**
- * @fileOverview An AI flow to analyze a product image.
+ * @fileOverview An AI flow to analyze a product image and find it in the marketplace.
  *
- * - analyzeProductImage - A function that identifies a product from an image, provides details, and translates them.
+ * - analyzeProductImage - A function that identifies a product from an image, provides details, translates them, and finds matching products.
  * - AnalyzeProductImageInput - The input type for the function.
  * - AnalyzeProductImageOutput - The return type for the function.
  */
@@ -25,12 +25,22 @@ export type AnalyzeProductImageInput = z.infer<
   typeof AnalyzeProductImageInputSchema
 >;
 
+const FoundProductSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    price: z.number(),
+    vendorName: z.string(),
+    vendorId: z.string(),
+    image: z.string().nullable(),
+});
+
 const AnalyzeProductImageOutputSchema = z.object({
   isFoodItem: z.boolean().describe('Whether the image contains a recognizable food item.'),
   productName: z.string().describe('The common name of the identified food item (e.g., "Apple", "Banana"). This should be in English.'),
   description: z
     .string()
     .describe('A helpful, engaging description of the food item including nutritional information (like calories) and tips (like when to eat it). This description MUST be in the requested language.'),
+  foundProducts: z.array(FoundProductSchema).describe('A list of products found in the marketplace that match the identified item, ordered by price.'),
 });
 export type AnalyzeProductImageOutput = z.infer<
   typeof AnalyzeProductImageOutputSchema
@@ -42,11 +52,18 @@ export async function analyzeProductImage(
   return analyzeProductImageFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'analyzeProductImagePrompt',
-  input: { schema: AnalyzeProductImageInputSchema },
-  output: { schema: AnalyzeProductImageOutputSchema },
-  prompt: `You are a food and nutrition expert for a marketplace app. Your task is to analyze an image of a single food item.
+const analysisPrompt = ai.definePrompt({
+    name: 'analysisPrompt',
+    input: { schema: z.object({
+        photoDataUri: AnalyzeProductImageInputSchema.shape.photoDataUri,
+        language: AnalyzeProductImageInputSchema.shape.language,
+    }) },
+    output: { schema: z.object({
+        isFoodItem: AnalyzeProductImageOutputSchema.shape.isFoodItem,
+        productName: AnalyzeProductImageOutputSchema.shape.productName,
+        description: AnalyzeProductImageOutputSchema.shape.description,
+    }) },
+    prompt: `You are a food and nutrition expert for a marketplace app. Your task is to analyze an image of a single food item.
 
   1.  First, determine if the image clearly shows a food item. If not, set 'isFoodItem' to false and the other fields to empty strings.
   2.  If it is a food item, identify its common name. Set 'productName' to this name in English.
@@ -95,10 +112,15 @@ const analyzeProductImageFlow = ai.defineFlow(
     }
     
     // Call the model
-    const { output } = await prompt(input);
+    const { output: analysis } = await analysisPrompt({
+        photoDataUri: input.photoDataUri,
+        language: input.language
+    });
 
-    // If analysis is successful (it's a food item), increment the scan count.
-    if (output && output.isFoodItem) {
+    let foundProducts: z.infer<typeof FoundProductSchema>[] = [];
+    
+    // If analysis is successful (it's a food item), increment the scan count and search for products.
+    if (analysis && analysis.isFoodItem && analysis.productName) {
         const { error: updateError } = await supabase
             .from('profiles')
             .update({
@@ -111,8 +133,31 @@ const analyzeProductImageFlow = ai.defineFlow(
             // Log the error but don't fail the whole flow. The user got their analysis.
             console.error('Failed to update scan count:', updateError);
         }
+
+        const { data: productsData, error: productsError } = await supabase
+            .from('products')
+            .select('*, vendors(id, name)')
+            .ilike('name', `%${analysis.productName.trim()}%`)
+            .order('price', { ascending: true })
+            .limit(3);
+
+        if (productsError) {
+            console.error('Error searching for products:', productsError);
+            // Don't fail the flow, just return an empty array
+        }
+
+        if (productsData) {
+            foundProducts = productsData.map(p => ({
+                id: p.id,
+                name: p.name,
+                price: p.price,
+                vendorName: p.vendors?.name || 'Unknown Vendor',
+                vendorId: p.vendors?.id || '',
+                image: p.image || null
+            }));
+        }
     }
 
-    return output!;
+    return { ...analysis!, foundProducts };
   }
 );
