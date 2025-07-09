@@ -8,7 +8,7 @@ import { Search as SearchIcon, SearchX, Loader2, ArrowLeft } from 'lucide-react'
 import { ProductResultCard } from '@/components/products/ProductResultCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import type { User } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import type { ShoppingListItem, ProductWithVendor } from '@/types';
 import { ShoppingList } from '../shopping-list/ShoppingList';
 import Link from 'next/link';
@@ -16,7 +16,7 @@ import Link from 'next/link';
 const ITEMS_PER_PAGE = 10;
 
 interface ProductResultsProps {
-    user: User | null;
+    user: SupabaseUser | null;
     shoppingListItems: ShoppingListItem[];
     initialProducts: ProductWithVendor[];
     searchQuery?: string;

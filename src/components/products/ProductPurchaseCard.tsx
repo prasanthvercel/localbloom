@@ -11,14 +11,14 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { addItemToShoppingList } from '@/app/shopping-list/actions';
-import type { User } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import type { Vendor, ProductWithVendor as ProductWithVendorType } from '@/types';
 import { Input } from '../ui/input';
 
 interface ProductPurchaseCardProps {
   product: ProductWithVendorType;
   vendor: Vendor;
-  user: User | null;
+  user: SupabaseUser | null;
 }
 
 export function ProductPurchaseCard({ product, vendor, user }: ProductPurchaseCardProps) {

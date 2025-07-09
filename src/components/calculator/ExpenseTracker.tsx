@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Trash2, PlusCircle, Save, Pencil, XCircle } from 'lucide-react';
-import type { User } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { format } from 'date-fns';
 import { updateExpense } from '@/app/calculator/actions';
 
@@ -32,7 +32,7 @@ type Expense = {
 };
 
 interface ExpenseTrackerProps {
-  user: User;
+  user: SupabaseUser;
   initialExpenses: Expense[];
 }
 

@@ -7,7 +7,7 @@ import { ProductPurchaseCard } from '@/components/products/ProductPurchaseCard';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { Card, CardContent } from '@/components/ui/card';
-import type { User } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import type { Product, Vendor, ProductWithVendor } from '@/types';
 
 async function getProductDetails(productId: string) {
@@ -123,7 +123,7 @@ export default async function ProductDetailPage({ params }: { params: { productI
 
           {/* Right Column: Purchase Info */}
           <div className="lg:col-span-1">
-            <ProductPurchaseCard product={product} vendor={vendor} user={user as User | null} />
+            <ProductPurchaseCard product={product} vendor={vendor} user={user as SupabaseUser | null} />
           </div>
         </div>
 

@@ -1,7 +1,7 @@
 import { DashboardPage } from '@/components/DashboardPage';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
-import type { User } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { VendorDashboardPage } from '@/components/vendor/VendorDashboardPage';
 import type { ShoppingListItem, Vendor } from '@/types';
 
@@ -35,7 +35,7 @@ export default async function Home() {
 
   return (
     <DashboardPage 
-      user={user as User | null} 
+      user={user as SupabaseUser | null} 
       shoppingListItems={shoppingListItems} 
       featuredVendors={(featuredVendors as Vendor[]) || []}
       categories={categories || []}

@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
-import type { User } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { ProductResults } from '@/components/products/ProductResults';
 import type { ProductWithVendor, ShoppingListItem } from '@/types';
 
@@ -76,7 +76,7 @@ export default async function ProductsPage({
 
   return (
     <ProductResults
-      user={user as User | null}
+      user={user as SupabaseUser | null}
       shoppingListItems={shoppingListItems}
       initialProducts={products}
       searchQuery={searchQuery}

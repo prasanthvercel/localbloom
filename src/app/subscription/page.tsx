@@ -9,7 +9,7 @@ import { Check, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import type { Profile } from '@/types';
 import { createRazorpayOrder, verifyPaymentAndUpdateProfile } from './actions';
 import { useRouter } from 'next/navigation';
@@ -67,7 +67,7 @@ export default function SubscriptionPage() {
     const { toast } = useToast();
     const router = useRouter();
     const supabase = createClient();
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<SupabaseUser | null>(null);
     const [profile, setProfile] = useState<Profile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isProcessingPayment, setIsProcessingPayment] = useState<string | null>(null);

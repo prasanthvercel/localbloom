@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
-import type { User } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { updateShopDetails } from './actions';
@@ -31,7 +31,7 @@ const shopSchema = z.object({
 type ShopFormValues = z.infer<typeof shopSchema>;
 
 interface ShopFormProps {
-  user: User;
+  user: SupabaseUser;
   vendor: Vendor | null;
 }
 

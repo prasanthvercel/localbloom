@@ -11,12 +11,12 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { addItemToShoppingList } from '@/app/shopping-list/actions';
-import type { User } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import type { ProductWithVendor } from '@/types';
 
 interface ProductResultCardProps {
   item: ProductWithVendor;
-  user: User | null;
+  user: SupabaseUser | null;
 }
 
 export function ProductResultCard({ item, user }: ProductResultCardProps) {

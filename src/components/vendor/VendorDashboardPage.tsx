@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import type { User } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { Building, PackagePlus, User as UserIcon } from 'lucide-react';
 
 interface VendorDashboardPageProps {
-    user: User;
+    user: SupabaseUser;
 }
 
 export function VendorDashboardPage({ user }: VendorDashboardPageProps) {

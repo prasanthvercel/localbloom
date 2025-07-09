@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
-import type { User } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { ShoppingList } from './shopping-list/ShoppingList';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ import type { Vendor } from '@/types';
 import type { ShoppingListItem } from '@/app/shopping-list/page';
 
 interface DashboardPageProps {
-    user: User | null;
+    user: SupabaseUser | null;
     shoppingListItems: ShoppingListItem[];
     featuredVendors: Vendor[];
     categories: string[];
