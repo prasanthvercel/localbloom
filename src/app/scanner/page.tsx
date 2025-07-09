@@ -101,7 +101,8 @@ export default function ScannerPage() {
           currentScanCount = 0;
         }
       }
-      setRemainingScans(FREE_SCAN_LIMIT - currentScanCount);
+      // Set to 0 for testing subscription prompt
+      setRemainingScans(0);
 
       setIsInitializing(false);
     };
@@ -258,7 +259,7 @@ export default function ScannerPage() {
             <CardHeader>
               <CardTitle className="text-2xl font-bold flex items-center gap-2"><ScanLine className="text-primary"/> Product Scanner</CardTitle>
               <CardDescription>
-                You have <span className="font-bold text-primary">{remainingScans}</span> free scan(s) remaining this month.
+                Point your camera at a food item and capture an image to get started.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
