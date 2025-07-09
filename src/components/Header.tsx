@@ -2,7 +2,7 @@
 "use client"
 
 import Link from 'next/link';
-import { LogOut, LogIn, UserPlus, User as UserIcon, ChevronDown, ScanLine, HeartPulse } from 'lucide-react';
+import { LogOut, LogIn, UserPlus, User as UserIcon, ChevronDown, Camera, HeartPulse } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -73,6 +73,7 @@ export function Header() {
     if (href.includes('/marketplace')) return pathname.startsWith('/marketplace') || pathname.startsWith('/products');
     if (href.includes('/scanner')) return pathname.startsWith('/scanner');
     if (href.includes('/nutrition')) return pathname.startsWith('/nutrition');
+    if (href.includes('/calculator')) return pathname.startsWith('/calculator');
     return pathname.startsWith(href);
   }
 
@@ -91,13 +92,16 @@ export function Header() {
       { href: '/', label: 'Home' },
       { href: '/marketplace', label: 'Categories', isDropdown: true },
     ];
-    // Scanner link depends on auth state
-    navItemsToDisplay.push({ href: user ? '/scanner' : '/scanner/gate', label: 'Scanner', icon: ScanLine });
     
-    // Show nutrition only for customers
+    // Show nutrition and expenses only for customers
     if (userRole === 'customer') {
-      navItemsToDisplay.push({ href: '/nutrition', label: 'Nutrition', icon: HeartPulse });
+      navItemsToDisplay.push({ href: '/nutrition', label: 'Nutrition' });
+      navItemsToDisplay.push({ href: '/calculator', label: 'Expenses' });
     }
+    
+    // Scanner link depends on auth state
+    navItemsToDisplay.push({ href: user ? '/scanner' : '/scanner/gate', label: 'Scanner', icon: Camera });
+
   }
   
   const isCategoriesActive = pathname.startsWith('/products') || pathname === '/marketplace';
@@ -110,7 +114,7 @@ export function Header() {
           <span className="text-xl font-bold text-foreground font-headline">LocalBloom</span>
         </Link>
         
-        <nav className="hidden md:flex items-center space-x-4 text-sm font-medium">
+        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
           {navItemsToDisplay.map((item) => {
             if (item.isDropdown) {
               return (
