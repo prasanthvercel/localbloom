@@ -20,7 +20,7 @@ const AnalyzeProductImageInputSchema = z.object({
       "A photo of a food item, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
   language: z.string().describe('The language for the output description.'),
-  userId: z.string().uuid().describe('The ID of the user performing the scan.'),
+  userId: z.string().uuid().optional().describe('The ID of the user performing the scan. Optional for anonymous users.'),
 });
 export type AnalyzeProductImageInput = z.infer<
   typeof AnalyzeProductImageInputSchema
@@ -69,7 +69,7 @@ const analysisPrompt = ai.definePrompt({
         description: AnalyzeProductImageOutputSchema.shape.description,
         personalizedAdvice: AnalyzeProductImageOutputSchema.shape.personalizedAdvice,
     }) },
-    prompt: `You are an expert nutritionist and personal wellness coach for a marketplace app. Your task is to analyze an image of a single food item and provide personalized advice.
+    prompt: `You are an expert nutritionist and personal wellness coach for a marketplace app. Your task is to analyze an image of a single food item and provide personalized advice if available.
 
   CONTEXT:
   - User's selected language: {{{language}}}
@@ -83,11 +83,11 @@ const analysisPrompt = ai.definePrompt({
   3. Write a friendly and helpful description (2-4 sentences) about the item. Include:
       - Approximate calories and key nutrients (e.g., protein, fiber).
       - A fun fact or a tip on when it's best to eat.
-  4. CRITICAL: Based on the user's wellness goal, provide personalized advice.
+  4. CRITICAL: If the user has provided wellness data, provide personalized advice.
       - If goal is "Weight Loss", analyze if the food is good for a calorie-deficit diet.
       - If goal is "Muscle Gain", analyze its protein content and suitability for post-workout.
       - If goal is "General Health", analyze its overall nutritional benefits.
-      - If no goal is specified, provide general health tips about the food.
+      - If no goal is specified, provide general health tips about the food, OR if no user wellness data is provided at all, return an empty string for this field.
       - Keep the advice concise, encouraging, and actionable (1-3 sentences).
   5. The final 'description' and 'personalizedAdvice' fields MUST be translated into the user's requested language: {{{language}}}.
 
@@ -104,33 +104,25 @@ const analyzeProductImageFlow = ai.defineFlow(
   async (input) => {
     const cookieStore = cookies();
     const supabase = createClient(cookieStore);
+    
+    let profile: { scan_count: number | null, last_scan_date: string | null, height: number | null, weight: number | null, wellness_goal: string | null } | null = null;
 
-    // Fetch profile to check/reset count and get wellness data
-    const { data: profile, error: fetchError } = await supabase
-      .from('profiles')
-      .select('scan_count, last_scan_date, height, weight, wellness_goal')
-      .eq('id', input.userId)
-      .single();
+    // Only interact with the database if a user is logged in
+    if (input.userId) {
+        const { data: userProfile, error: fetchError } = await supabase
+          .from('profiles')
+          .select('scan_count, last_scan_date, height, weight, wellness_goal')
+          .eq('id', input.userId)
+          .single();
 
-    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = row not found
-        throw new Error('Could not retrieve user profile.');
-    }
-
-    const today = new Date();
-    const lastScan = profile?.last_scan_date ? new Date(profile.last_scan_date) : null;
-    let scanCount = profile?.scan_count || 0;
-
-    // Reset count if last scan was in a previous month
-    if (lastScan && (lastScan.getMonth() !== today.getMonth() || lastScan.getFullYear() !== today.getFullYear())) {
-        scanCount = 0;
-    }
-
-    if (scanCount >= 3) {
-        // This check is also on the client, but is a necessary safeguard.
-        throw new Error('Free scan limit reached for this month.');
+        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = row not found
+            console.error('Could not retrieve user profile:', fetchError);
+            // Don't throw, just proceed without profile data
+        }
+        profile = userProfile;
     }
     
-    // Call the model
+    // Call the model with whatever data we have (profile can be null)
     const { output: analysis } = await analysisPrompt({
         photoDataUri: input.photoDataUri,
         language: input.language,
@@ -141,19 +133,31 @@ const analyzeProductImageFlow = ai.defineFlow(
 
     let foundProducts: z.infer<typeof FoundProductSchema>[] = [];
     
-    // If analysis is successful (it's a food item), increment the scan count and search for products.
+    // If analysis is successful and it's a food item, search for products.
+    // If user is logged in, also update their scan count.
     if (analysis && analysis.isFoodItem && analysis.productName) {
-        const { error: updateError } = await supabase
-            .from('profiles')
-            .update({
-                scan_count: scanCount + 1,
-                last_scan_date: today.toISOString(),
-            })
-            .eq('id', input.userId);
-        
-        if (updateError) {
-            // Log the error but don't fail the whole flow. The user got their analysis.
-            console.error('Failed to update scan count:', updateError);
+        if (input.userId && profile) {
+            const today = new Date();
+            const lastScan = profile.last_scan_date ? new Date(profile.last_scan_date) : null;
+            let scanCount = profile.scan_count || 0;
+
+            // Reset count if last scan was in a previous month
+            if (lastScan && (lastScan.getMonth() !== today.getMonth() || lastScan.getFullYear() !== today.getFullYear())) {
+                scanCount = 0;
+            }
+
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({
+                    scan_count: scanCount + 1,
+                    last_scan_date: today.toISOString(),
+                })
+                .eq('id', input.userId);
+            
+            if (updateError) {
+                // Log the error but don't fail the whole flow. The user got their analysis.
+                console.error('Failed to update scan count:', updateError);
+            }
         }
 
         const { data: productsData, error: productsError } = await supabase

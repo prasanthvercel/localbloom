@@ -12,20 +12,49 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Gem } from 'lucide-react';
+import { Gem, LogIn, UserPlus } from 'lucide-react';
+import Link from 'next/link';
 
 interface SubscriptionPromptDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  isAnonymous: boolean;
 }
 
-export function SubscriptionPromptDialog({ isOpen, setIsOpen }: SubscriptionPromptDialogProps) {
-  // In a real app, this would link to a pricing/checkout page.
-  const handleSubscribe = () => {
-    console.log('Redirecting to subscription page...');
-    setIsOpen(false);
-  };
+export function SubscriptionPromptDialog({ isOpen, setIsOpen, isAnonymous }: SubscriptionPromptDialogProps) {
+  
+  if (isAnonymous) {
+     return (
+       <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <UserPlus className="text-primary" />
+                Join to Continue Scanning
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                You've used all your free anonymous scans. Create a free account or log in to get more monthly scans and unlock personalized wellness advice.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Maybe Later</AlertDialogCancel>
+              <AlertDialogAction asChild>
+                <Button variant="outline" asChild>
+                  <Link href="/login"><LogIn className="mr-2 h-4 w-4" />Log In</Link>
+                </Button>
+              </AlertDialogAction>
+              <AlertDialogAction asChild>
+                <Button asChild>
+                  <Link href="/register">Sign Up Free</Link>
+                </Button>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+     )
+  }
 
+  // Default prompt for logged-in users
   return (
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialogContent>
@@ -45,7 +74,7 @@ export function SubscriptionPromptDialog({ isOpen, setIsOpen }: SubscriptionProm
         <AlertDialogFooter>
           <AlertDialogCancel>Maybe Later</AlertDialogCancel>
           <AlertDialogAction asChild>
-            <Button onClick={handleSubscribe}>
+            <Button>
               View Subscription Plans
             </Button>
           </AlertDialogAction>

@@ -4,31 +4,36 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Camera, ScanLine, Sparkles, Languages, Info, HeartPulse } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Sparkles, Languages, Info, HeartPulse, User } from 'lucide-react';
 import { analyzeProductImage, type AnalyzeProductImageOutput } from '@/ai/flows/analyze-product-image-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { SubscriptionPromptDialog } from '@/components/scanner/SubscriptionPromptDialog';
 import { Separator } from '@/components/ui/separator';
 
+const FREE_SCAN_LIMIT = 3;
+
 export default function ScannerPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const supabase = createClient();
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [remainingScans, setRemainingScans] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [isCheckingUsage, setIsCheckingUsage] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
   
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
@@ -63,31 +68,51 @@ export default function ScannerPage() {
       }
     };
 
-    const checkUserAndUsage = async () => {
+    const initializeScanner = async () => {
+      setIsInitializing(true);
+      await getCameraPermission();
+      
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
 
       if (user) {
-        await getCameraPermission();
+        setIsAnonymous(false);
         const { data: profile } = await supabase.from('profiles').select('scan_count, last_scan_date').eq('id', user.id).single();
         
+        let currentScanCount = 0;
         if (profile) {
           const today = new Date();
           const lastScan = profile.last_scan_date ? new Date(profile.last_scan_date) : null;
-          let currentScanCount = profile.scan_count || 0;
+          currentScanCount = profile.scan_count || 0;
 
           if (lastScan && (lastScan.getMonth() !== today.getMonth() || lastScan.getFullYear() !== today.getFullYear())) {
             currentScanCount = 0;
           }
-          setRemainingScans(Math.max(0, 3 - currentScanCount));
-        } else {
-          setRemainingScans(3);
+        }
+        setRemainingScans(Math.max(0, FREE_SCAN_LIMIT - currentScanCount));
+      } else {
+        setIsAnonymous(true);
+        try {
+          const storedData = localStorage.getItem('anonymousScanData');
+          let count = 0;
+          if (storedData) {
+            const data = JSON.parse(storedData);
+            const today = new Date();
+            const lastScan = new Date(data.lastScanDate);
+            if (lastScan.getMonth() === today.getMonth() && lastScan.getFullYear() === today.getFullYear()) {
+              count = data.count || 0;
+            }
+          }
+          setRemainingScans(Math.max(0, FREE_SCAN_LIMIT - count));
+        } catch (e) {
+          console.error("Could not read from local storage", e);
+          setRemainingScans(FREE_SCAN_LIMIT);
         }
       }
-      setIsCheckingUsage(false);
+      setIsInitializing(false);
     };
 
-    checkUserAndUsage();
+    initializeScanner();
     
     return () => {
       if (videoRef.current?.srcObject) {
@@ -97,7 +122,7 @@ export default function ScannerPage() {
   }, [supabase]);
 
   const captureAndAnalyze = async () => {
-    if (!videoRef.current || !canvasRef.current || !user) return;
+    if (!videoRef.current || !canvasRef.current) return;
     
     if (remainingScans <= 0) {
       setShowSubscriptionPrompt(true);
@@ -115,11 +140,31 @@ export default function ScannerPage() {
     const photoDataUri = canvas.toDataURL('image/jpeg');
 
     try {
-      const result = await analyzeProductImage({ photoDataUri, language, userId: user.id });
+      const result = await analyzeProductImage({ photoDataUri, language, userId: user?.id });
       setAnalysisResult(result);
 
       if (result.isFoodItem) {
         setRemainingScans(prev => Math.max(0, prev - 1));
+        // Update anonymous count in local storage
+        if (isAnonymous) {
+          try {
+            const storedData = localStorage.getItem('anonymousScanData');
+            let data = { count: 0, lastScanDate: new Date().toISOString() };
+            if (storedData) {
+              data = JSON.parse(storedData);
+            }
+            const today = new Date();
+            const lastScan = new Date(data.lastScanDate);
+            if (lastScan.getMonth() !== today.getMonth() || lastScan.getFullYear() !== today.getFullYear()) {
+              data.count = 0;
+            }
+            data.count += 1;
+            data.lastScanDate = today.toISOString();
+            localStorage.setItem('anonymousScanData', JSON.stringify(data));
+          } catch (e) {
+            console.error("Could not write to local storage", e);
+          }
+        }
         toast({ title: 'Analysis Complete!', description: `Identified: ${result.productName}.` });
       } else {
          toast({ variant: 'destructive', title: 'Not a Food Item', description: 'The scanner is optimized for food items. Please try again.' });
@@ -133,20 +178,8 @@ export default function ScannerPage() {
   };
 
   const renderContent = () => {
-    if (isCheckingUsage) {
+    if (isInitializing) {
       return <div className="flex justify-center items-center h-64"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
-    }
-
-    if (!user) {
-      return (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertTitle>Please Log In</AlertTitle>
-          <AlertDescription>
-            You need to be logged in to use the product scanner. <Link href="/login" className="font-bold underline">Login here</Link>.
-          </AlertDescription>
-        </Alert>
-      );
     }
 
     if (hasCameraPermission === false && cameraError) {
@@ -158,7 +191,7 @@ export default function ScannerPage() {
         </Alert>
       );
     }
-
+    
     return (
       <div className="space-y-4">
         <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden border">
@@ -197,7 +230,7 @@ export default function ScannerPage() {
 
   return (
     <>
-      <SubscriptionPromptDialog isOpen={showSubscriptionPrompt} setIsOpen={setShowSubscriptionPrompt} />
+      <SubscriptionPromptDialog isOpen={showSubscriptionPrompt} setIsOpen={setShowSubscriptionPrompt} isAnonymous={isAnonymous} />
       <div className="flex flex-col min-h-screen bg-secondary/30">
         <Header />
         <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -206,6 +239,9 @@ export default function ScannerPage() {
               <CardTitle className="text-2xl font-bold flex items-center gap-2"><ScanLine className="text-primary"/> Product Scanner</CardTitle>
               <CardDescription>
                 You have <span className="font-bold text-primary">{remainingScans}</span> free scan(s) remaining this month.
+                {isAnonymous && <span className="block text-xs mt-1">
+                  <Link href="/login" className="underline">Log in</Link> or <Link href="/register" className="underline">sign up</Link> to get more scans and personalized advice.
+                </span>}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
