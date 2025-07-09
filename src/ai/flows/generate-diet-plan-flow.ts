@@ -11,7 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-export const MealSchema = z.object({
+const MealSchema = z.object({
   name: z.string().describe('The name of the dish, e.g., "Oatmeal with Berries".'),
   description: z.string().describe('A short, appealing description of the meal.'),
   calories: z.number().describe('Estimated calories for the meal.'),
@@ -19,7 +19,7 @@ export const MealSchema = z.object({
   carbs: z.number().describe('Estimated carbohydrates in grams.'),
   fat: z.number().describe('Estimated fat in grams.'),
 });
-export type Meal = z.infer<typeof MealSchema>;
+type Meal = z.infer<typeof MealSchema>;
 
 const DailyPlanSchema = z.object({
   breakfast: MealSchema,
@@ -33,9 +33,9 @@ const DailyPlanSchema = z.object({
       fat: z.number().describe('Total estimated fat in grams for the day.'),
   }),
 });
-export type DailyPlan = z.infer<typeof DailyPlanSchema>;
+type DailyPlan = z.infer<typeof DailyPlanSchema>;
 
-export const GenerateDietPlanInputSchema = z.object({
+const GenerateDietPlanInputSchema = z.object({
   height: z.number().describe('User height in cm.'),
   weight: z.number().describe('User weight in kg.'),
   wellness_goal: z.string().describe('User wellness goal (e.g., Weight Loss, Muscle Gain).'),
@@ -43,7 +43,7 @@ export const GenerateDietPlanInputSchema = z.object({
 });
 export type GenerateDietPlanInput = z.infer<typeof GenerateDietPlanInputSchema>;
 
-export const GenerateDietPlanOutputSchema = z.object({
+const GenerateDietPlanOutputSchema = z.object({
   monday: DailyPlanSchema,
   tuesday: DailyPlanSchema,
   wednesday: DailyPlanSchema,
