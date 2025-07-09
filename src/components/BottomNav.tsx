@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calculator, Home, User, LayoutGrid, ScanLine, HeartPulse } from 'lucide-react';
+import { Calculator, Home, LayoutGrid, HeartPulse, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -31,11 +31,17 @@ const baseNavItems = [
   { href: '/marketplace', label: 'Categories', icon: LayoutGrid },
   { href: '/calculator', label: 'Expenses', icon: Calculator, auth: true, role: 'customer' },
   { href: '/nutrition', label: 'Nutrition', icon: HeartPulse, auth: true, role: 'customer' },
-  { href: '/account', label: 'Profile', icon: User, auth: true },
 ];
 
-const scannerItem = { href: '/scanner', label: 'Scan', icon: ScanLine };
-const scannerGateItem = { href: '/scanner/gate', label: 'Scan', icon: ScanLine };
+const vendorNavItems = [
+  { href: '/', label: 'Home', icon: Home },
+  { href: '/vendor/products', label: 'Products', icon: LayoutGrid },
+  { href: '/vendor/shop', label: 'Shop', icon: Calculator, auth: true, role: 'vendor' },
+  { href: '/account', label: 'Profile', icon: HeartPulse, auth: true },
+];
+
+const scannerItem = { href: '/scanner', label: 'Scan', icon: Camera };
+const scannerGateItem = { href: '/scanner/gate', label: 'Scan', icon: Camera };
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -63,13 +69,15 @@ export function BottomNav() {
     return pathname.startsWith(href);
   }
 
-  const itemsToDisplay = baseNavItems.filter(item => {
+  const userRole = user?.user_metadata?.role;
+  const navItems = userRole === 'vendor' ? vendorNavItems : baseNavItems;
+
+  const itemsToDisplay = navItems.filter(item => {
     if (item.auth && (loading || !user)) return false;
-    if (item.role && user?.user_metadata?.role !== item.role) return false;
+    if (item.role && userRole !== item.role) return false;
     return true;
   });
 
-  const userRole = user?.user_metadata?.role;
   const finalScannerItem = user ? scannerItem : scannerGateItem;
 
   // Regular flex layout for vendors (or if loading)

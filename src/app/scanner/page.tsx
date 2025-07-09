@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Camera, ScanLine, Sparkles, Languages, HeartPulse, Apple } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Sparkles, Languages, HeartPulse, Apple, Check, X } from 'lucide-react';
 import { analyzeProductImage, type AnalyzeProductImageOutput } from '@/ai/flows/analyze-product-image-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,6 +37,10 @@ export default function ScannerPage() {
   
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [cameraError, setCameraError] = useState<{ title: string; description: string } | null>(null);
+  
+  const [captureState, setCaptureState] = useState<'idle' | 'captured'>('idle');
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  
   const [analysisResult, setAnalysisResult] = useState<AnalyzeProductImageOutput | null>(null);
   const [language, setLanguage] = useState('English');
   
@@ -97,7 +101,7 @@ export default function ScannerPage() {
           currentScanCount = 0;
         }
       }
-      setRemainingScans(0);
+      setRemainingScans(FREE_SCAN_LIMIT - currentScanCount);
 
       setIsInitializing(false);
     };
@@ -111,8 +115,8 @@ export default function ScannerPage() {
     };
   }, [supabase, router]);
 
-  const captureAndAnalyze = async () => {
-    if (!videoRef.current || !canvasRef.current || !user) return;
+  const analyzeImage = async (photoDataUri: string) => {
+    if (!user) return;
     
     if (remainingScans <= 0) {
       setShowSubscriptionPrompt(true);
@@ -120,14 +124,6 @@ export default function ScannerPage() {
     }
 
     setIsLoading(true);
-    setAnalysisResult(null);
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d')?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-    const photoDataUri = canvas.toDataURL('image/jpeg');
 
     try {
       const result = await analyzeProductImage({ photoDataUri, language, userId: user.id });
@@ -147,6 +143,36 @@ export default function ScannerPage() {
       toast({ variant: 'destructive', title: 'Analysis Failed', description: error instanceof Error ? error.message : 'Could not analyze the image. Please try again.' });
     } finally {
       setIsLoading(false);
+      setCaptureState('idle');
+      setCapturedImage(null);
+    }
+  };
+
+  const handleCapture = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    setAnalysisResult(null);
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext('2d');
+    if (context) {
+        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+        const photoDataUri = canvas.toDataURL('image/jpeg');
+        setCapturedImage(photoDataUri);
+        setCaptureState('captured');
+    }
+  };
+  
+  const handleRetake = () => {
+    setCapturedImage(null);
+    setCaptureState('idle');
+  };
+
+  const handleConfirmAndAnalyze = () => {
+    if (capturedImage) {
+        analyzeImage(capturedImage);
     }
   };
 
@@ -168,7 +194,12 @@ export default function ScannerPage() {
     return (
       <div className="space-y-4">
         <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden border">
-          <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+          {captureState === 'captured' && capturedImage ? (
+             <Image src={capturedImage} alt="Captured product" fill className="object-cover" />
+          ) : (
+            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+          )}
+          
           {isLoading && (
             <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white">
               <Loader2 className="h-12 w-12 animate-spin mb-4" />
@@ -178,25 +209,35 @@ export default function ScannerPage() {
         </div>
         <canvas ref={canvasRef} className="hidden" />
 
-        <div className="flex flex-col sm:flex-row gap-4 items-center">
-          <div className="w-full sm:w-1/2 space-y-2">
-            <Label htmlFor="language-select" className="flex items-center gap-2 text-muted-foreground"><Languages /> Language</Label>
-            <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger id="language-select"><SelectValue placeholder="Select language" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="English">English</SelectItem>
-                <SelectItem value="Spanish">Spanish</SelectItem>
-                <SelectItem value="French">French</SelectItem>
-                <SelectItem value="German">German</SelectItem>
-                <SelectItem value="Hindi">Hindi</SelectItem>
-              </SelectContent>
-            </Select>
+        {captureState === 'idle' ? (
+           <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="w-full sm:w-1/2 space-y-2">
+              <Label htmlFor="language-select" className="flex items-center gap-2 text-muted-foreground"><Languages /> Language</Label>
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger id="language-select"><SelectValue placeholder="Select language" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="English">English</SelectItem>
+                  <SelectItem value="Spanish">Spanish</SelectItem>
+                  <SelectItem value="French">French</SelectItem>
+                  <SelectItem value="German">German</SelectItem>
+                  <SelectItem value="Hindi">Hindi</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={handleCapture} disabled={isLoading || !user} className="w-full sm:w-1/2 h-16 text-lg sm:self-end">
+              <Camera className="mr-2 h-6 w-6" /> Capture Image
+            </Button>
           </div>
-
-          <Button onClick={captureAndAnalyze} disabled={isLoading || !user} className="w-full sm:w-1/2 h-16 text-lg sm:self-end">
-            {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <><Camera className="mr-2 h-6 w-6" /> Scan Product</>}
-          </Button>
-        </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+             <Button onClick={handleRetake} variant="outline" size="lg" className="w-full sm:w-auto">
+                <X className="mr-2 h-5 w-5"/> Retake
+             </Button>
+             <Button onClick={handleConfirmAndAnalyze} size="lg" className="w-full sm:w-auto">
+                <Check className="mr-2 h-5 w-5"/> Analyze with AI
+             </Button>
+          </div>
+        )}
       </div>
     );
   };
