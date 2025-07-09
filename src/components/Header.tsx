@@ -24,46 +24,28 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      // Fetch categories
-      const { data: categoriesData } = await supabase.from('vendors').select('category');
-      if (categoriesData) {
-        const uniqueCategories = [...new Set(categoriesData.map(v => v.category).filter(Boolean) as string[])];
-        setCategories(uniqueCategories);
-      }
-      
-      // Fetch initial user and profile
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      if (user) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('subscription_tier')
-          .eq('id', user.id)
-          .single();
-        setProfile(profileData);
-      }
-      setLoading(false);
-    };
-
-    fetchInitialData();
-
+ useEffect(() => {
+    // This effect handles authentication state and fetching associated profile data.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const currentUser = session?.user ?? null;
+      const currentUser = session?.user;
       setUser(currentUser);
-
+      
       if (currentUser) {
-         const { data: profileData } = await supabase
-            .from('profiles')
-            .select('subscription_tier')
-            .eq('id', currentUser.id)
-            .single();
+        // If a user is logged in, fetch their complete profile.
+        const { data: profileData, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', currentUser.id)
+          .single();
+          
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching profile:', error);
+        }
         setProfile(profileData);
       } else {
+        // If no user, clear the profile.
         setProfile(null);
       }
-
       setLoading(false);
 
       if (event === 'SIGNED_IN') {
@@ -73,28 +55,45 @@ export function Header() {
         } else {
           router.refresh();
         }
-      } else if (event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
-         router.refresh();
+      } else if (event === 'SIGNED_OUT') {
+        router.refresh();
       }
     });
+
+    // This effect fetches static data like categories just once on mount.
+    const fetchCategories = async () => {
+      const { data: categoriesData, error } = await supabase.from('vendors').select('category');
+      if (error) {
+        console.error('Error fetching categories:', error);
+      } else if (categoriesData) {
+        const uniqueCategories = [...new Set(categoriesData.map(v => v.category).filter(Boolean) as string[])];
+        setCategories(uniqueCategories);
+      }
+    };
+    
+    fetchCategories();
 
     return () => {
       subscription?.unsubscribe();
     };
-  }, [router, supabase]);
+  }, [supabase, router]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push('/');
   };
   
-  const getInitials = (emailOrName: string | undefined) => {
-    if (!emailOrName) return 'U';
-    const parts = emailOrName.split(' ');
-    if (parts.length > 1 && parts[1]) {
-        return parts[0].charAt(0).toUpperCase() + parts[1].charAt(0).toUpperCase();
+  const getInitials = (fullName?: string | null, email?: string | null) => {
+    if (fullName) {
+      const parts = fullName.split(' ');
+      if (parts.length > 1 && parts[1]) {
+          return parts[0].charAt(0).toUpperCase() + parts[1].charAt(0).toUpperCase();
+      }
+      return fullName.charAt(0).toUpperCase();
     }
-    return emailOrName.charAt(0).toUpperCase();
+    if (email) {
+      return email.charAt(0).toUpperCase();
+    }
+    return 'U';
   };
 
   const getIsActive = (href: string) => {
@@ -107,7 +106,8 @@ export function Header() {
     return pathname.startsWith(href);
   }
 
-  const userRole = user?.user_metadata?.role;
+  // Prefer profile data, but fall back to user metadata for role.
+  const userRole = profile?.role || user?.user_metadata?.role;
   const isSubscribed = profile?.subscription_tier && profile.subscription_tier !== 'free';
   let navItemsToDisplay: { href: string; label: string; isDropdown?: boolean, icon?: React.ElementType }[] = [];
 
@@ -118,13 +118,11 @@ export function Header() {
       { href: '/vendor/shop', label: 'My Shop' },
     ];
   } else {
-    // For customers and guests
     navItemsToDisplay = [
       { href: '/', label: 'Home' },
       { href: '/marketplace', label: 'Categories', isDropdown: true },
     ];
     
-    // Show nutrition and expenses only for customers
     if (userRole === 'customer') {
       if (isSubscribed) {
         navItemsToDisplay.push({ href: '/nutrition', label: 'Nutrition' });
@@ -132,9 +130,7 @@ export function Header() {
       navItemsToDisplay.push({ href: '/calculator', label: 'Expenses' });
     }
     
-    // Scanner link depends on auth state
     navItemsToDisplay.push({ href: user ? '/scanner' : '/scanner/gate', label: 'Scanner', icon: Camera });
-
   }
   
   const isCategoriesActive = pathname.startsWith('/products') || pathname === '/marketplace';
@@ -163,7 +159,7 @@ export function Header() {
                     <DropdownMenuItem asChild>
                       <Link href="/marketplace">All Categories</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
+                    {categories.length > 0 && <DropdownMenuSeparator />}
                     {categories.map((category) => (
                       <DropdownMenuItem key={category} asChild>
                         <Link href={`/products?category=${encodeURIComponent(category)}`}>
@@ -220,15 +216,15 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
-                       <AvatarImage src={user.user_metadata?.avatar_url} alt={user.user_metadata?.full_name || user.email} />
-                      <AvatarFallback>{getInitials(user.user_metadata?.full_name || user.email)}</AvatarFallback>
+                       <AvatarImage src={profile?.avatar_url || user.user_metadata?.avatar_url} alt={profile?.full_name || user.email!} />
+                      <AvatarFallback>{getInitials(profile?.full_name, user.email)}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user.user_metadata?.full_name || 'My Account'}</p>
+                      <p className="text-sm font-medium leading-none">{profile?.full_name || 'My Account'}</p>
                       <p className="text-xs leading-none text-muted-foreground">
                         {user.email}
                       </p>
