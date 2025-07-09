@@ -40,7 +40,7 @@ export async function updateShopDetails(formData: FormData) {
   if (imageFile && imageFile.size > 0) {
       const filePath = `${user.id}/banner-${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
       const { error: uploadError } = await supabase.storage
-          .from('shop_images')
+          .from('shop-images')
           .upload(filePath, imageFile);
 
       if (uploadError) {
@@ -48,7 +48,7 @@ export async function updateShopDetails(formData: FormData) {
           return { success: false, error: `Could not upload image: ${uploadError.message}` };
       }
       
-      const { data: { publicUrl } } = supabase.storage.from('shop_images').getPublicUrl(filePath);
+      const { data: { publicUrl } } = supabase.storage.from('shop-images').getPublicUrl(filePath);
       imageUrl = publicUrl;
   } else if (!imageFile && !existingImageUrl) {
     imageUrl = 'https://placehold.co/400x250.png';

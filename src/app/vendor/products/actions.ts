@@ -51,7 +51,7 @@ export async function saveProduct(formData: FormData) {
   if (imageFile && imageFile.size > 0) {
       const filePath = `${vendor_id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
       const { error: uploadError } = await supabase.storage
-          .from('product_images')
+          .from('product-images')
           .upload(filePath, imageFile);
 
       if (uploadError) {
@@ -59,7 +59,7 @@ export async function saveProduct(formData: FormData) {
           return { success: false, error: `Could not upload image: ${uploadError.message}` };
       }
 
-      const { data: { publicUrl } } = supabase.storage.from('product_images').getPublicUrl(filePath);
+      const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(filePath);
       imageUrl = publicUrl;
   } else if (!imageFile && !existingImageUrl) {
       imageUrl = 'https://placehold.co/400x400.png';
