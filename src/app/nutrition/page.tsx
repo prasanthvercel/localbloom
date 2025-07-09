@@ -1,10 +1,14 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
 import { Header } from '@/components/Header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,11 +16,120 @@ import { Progress } from '@/components/ui/progress';
 import { generateDietPlan } from '@/ai/flows/generate-diet-plan-flow';
 import type { WeeklyDietPlan, NutritionLog, Profile, DailyPlan, Meal } from '@/types';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, getDay } from 'date-fns';
-import { Loader2, Utensils, Zap, ShieldAlert } from 'lucide-react';
+import { Loader2, Utensils, Zap, ShieldAlert, HeartPulse } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { updateWellnessProfile } from './actions';
 
 const dayIndexToName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+const wellnessProfileSchema = z.object({
+  height: z.coerce.number().positive('Height must be a positive number.'),
+  weight: z.coerce.number().positive('Weight must be a positive number.'),
+  wellness_goal: z.string().min(1, 'Please select a goal.'),
+});
+
+function WellnessProfileForm({ profile, onProfileUpdated }: { profile: Profile | null, onProfileUpdated: () => void }) {
+    const { toast } = useToast();
+    const [isLoading, setIsLoading] = useState(false);
+    
+    const form = useForm<z.infer<typeof wellnessProfileSchema>>({
+        resolver: zodResolver(wellnessProfileSchema),
+        defaultValues: {
+            height: profile?.height || undefined,
+            weight: profile?.weight || undefined,
+            wellness_goal: profile?.wellness_goal || '',
+        },
+    });
+    
+    const onSubmit = async (values: z.infer<typeof wellnessProfileSchema>) => {
+        setIsLoading(true);
+        const result = await updateWellnessProfile(values);
+        if (result.success) {
+            toast({ title: 'Profile Updated!', description: 'Generating your new diet plan...' });
+            onProfileUpdated();
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.error });
+        }
+        setIsLoading(false);
+    }
+    
+    return (
+        <Card className="max-w-md w-full">
+            <CardHeader>
+                <CardTitle className="text-xl flex items-center gap-2"><HeartPulse className="text-primary"/> Complete Your Wellness Profile</CardTitle>
+                <CardDescription>
+                    We need these details to generate your personalized nutrition plan.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="height"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Height (cm)</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" placeholder="e.g. 175" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="weight"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Weight (kg)</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" placeholder="e.g. 70" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <FormField
+                            control={form.control}
+                            name="wellness_goal"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Primary Goal</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
+                                    <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select your wellness goal" />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                    <SelectItem value="Weight Loss">Weight Loss</SelectItem>
+                                    <SelectItem value="Maintain Weight">Maintain Weight</SelectItem>
+                                    <SelectItem value="Muscle Gain">Muscle Gain</SelectItem>
+                                    <SelectItem value="General Health">General Health</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="submit" className="w-full" disabled={isLoading}>
+                            {isLoading ? 'Saving...' : 'Save & Generate Plan'}
+                        </Button>
+                    </form>
+                </Form>
+            </CardContent>
+        </Card>
+    );
+}
+
 
 const NutritionPage = () => {
     const supabase = createClient();
@@ -27,12 +140,48 @@ const NutritionPage = () => {
     const [dietPlan, setDietPlan] = useState<WeeklyDietPlan | null>(null);
     const [nutritionLog, setNutritionLog] = useState<NutritionLog[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const [isProfileIncomplete, setIsProfileIncomplete] = useState(false);
+
 
     const weekInterval = {
         start: startOfWeek(new Date(), { weekStartsOn: 1 }), // Monday
         end: endOfWeek(new Date(), { weekStartsOn: 1 }), // Sunday
     };
     const weekDays = eachDayOfInterval(weekInterval);
+
+    const fetchPlanAndLog = useCallback(async (currentUser: User, currentProfile: Profile) => {
+        setIsLoading(true);
+        setError(null);
+        setIsProfileIncomplete(false);
+
+        try {
+            const [plan, log] = await Promise.all([
+                generateDietPlan({
+                    height: currentProfile.height!,
+                    weight: currentProfile.weight!,
+                    wellness_goal: currentProfile.wellness_goal!,
+                    language: 'English',
+                }),
+                supabase.from('nutrition_log')
+                    .select('*')
+                    .eq('user_id', currentUser.id)
+                    .gte('log_date', format(weekInterval.start, 'yyyy-MM-dd'))
+                    .lte('log_date', format(weekInterval.end, 'yyyy-MM-dd')),
+            ]);
+            
+            setDietPlan(plan);
+            if (log.data) setNutritionLog(log.data);
+            if (log.error) {
+                console.warn('Could not fetch nutrition log:', log.error.message);
+            }
+
+        } catch (e) {
+            console.error(e);
+            setError('Could not generate your diet plan. Please try again later.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [supabase, weekInterval.end, weekInterval.start]);
 
     useEffect(() => {
         const initialize = async () => {
@@ -50,43 +199,38 @@ const NutritionPage = () => {
                 .eq('id', user.id)
                 .single();
             
-            if (profileError || !profileData || !profileData.height || !profileData.weight || !profileData.wellness_goal) {
-                setError('Please complete your wellness profile in your account settings to use the nutrition planner.');
+            if (profileError && profileError.code !== 'PGRST116') {
+                 setError('Could not load your profile. Please try again.');
+                 setIsLoading(false);
+                 return;
+            }
+
+            if (!profileData || !profileData.height || !profileData.weight || !profileData.wellness_goal) {
+                setProfile(profileData);
+                setIsProfileIncomplete(true);
                 setIsLoading(false);
                 return;
             }
+
             setProfile(profileData);
-
-            try {
-                const [plan, log] = await Promise.all([
-                    generateDietPlan({
-                        height: profileData.height,
-                        weight: profileData.weight,
-                        wellness_goal: profileData.wellness_goal,
-                        language: 'English',
-                    }),
-                    supabase.from('nutrition_log')
-                        .select('*')
-                        .eq('user_id', user.id)
-                        .gte('log_date', format(weekInterval.start, 'yyyy-MM-dd'))
-                        .lte('log_date', format(weekInterval.end, 'yyyy-MM-dd')),
-                ]);
-                
-                setDietPlan(plan);
-                if (log.data) setNutritionLog(log.data);
-                if (log.error) {
-                    console.warn('Could not fetch nutrition log. You may need to create the `nutrition_log` table in Supabase.');
-                }
-
-            } catch (e) {
-                console.error(e);
-                setError('Could not generate your diet plan. Please try again later.');
-            } finally {
-                setIsLoading(false);
-            }
+            await fetchPlanAndLog(user, profileData);
         };
         initialize();
-    }, [supabase, router]);
+    }, [supabase, router, fetchPlanAndLog]);
+
+    const handleProfileUpdated = async () => {
+        if (!user) return;
+        setIsLoading(true);
+        // Refetch profile data to get the latest
+        const { data: updatedProfile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        if (updatedProfile) {
+            setProfile(updatedProfile);
+            await fetchPlanAndLog(user, updatedProfile);
+        } else {
+             setError("Failed to reload profile after update.");
+             setIsLoading(false);
+        }
+    }
 
     const getLoggedMealsForDate = (date: Date) => {
         const dateString = format(date, 'yyyy-MM-dd');
@@ -118,6 +262,20 @@ const NutritionPage = () => {
         );
     }
     
+    if (isProfileIncomplete) {
+        return (
+            <div className="flex flex-col min-h-screen">
+                <Header />
+                <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
+                    <WellnessProfileForm
+                        profile={profile}
+                        onProfileUpdated={handleProfileUpdated}
+                    />
+                </main>
+            </div>
+        )
+    }
+
     if (error) {
          return (
             <div className="flex flex-col min-h-screen">
@@ -125,7 +283,7 @@ const NutritionPage = () => {
                 <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
                     <Card className="max-w-md text-center">
                         <CardHeader>
-                            <CardTitle className="text-destructive flex items-center justify-center gap-2"><ShieldAlert /> Profile Incomplete</CardTitle>
+                            <CardTitle className="text-destructive flex items-center justify-center gap-2"><ShieldAlert /> An Error Occurred</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <p>{error}</p>

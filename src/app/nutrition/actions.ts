@@ -40,3 +40,45 @@ export async function logConsumedItem(itemData: LogItemData) {
   revalidatePath('/nutrition');
   return { success: true, message: `${itemData.food_name} logged successfully!` };
 }
+
+const WellnessProfileSchema = z.object({
+  height: z.coerce.number().positive('Height must be a positive number.'),
+  weight: z.coerce.number().positive('Weight must be a positive number.'),
+  wellness_goal: z.string().min(1, 'Please select a goal.'),
+});
+
+export type WellnessProfileData = z.infer<typeof WellnessProfileSchema>;
+
+export async function updateWellnessProfile(data: WellnessProfileData) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'You must be logged in.' };
+  }
+  
+  const parsedData = WellnessProfileSchema.safeParse(data);
+  if (!parsedData.success) {
+      return { success: false, error: 'Invalid data provided.' };
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      height: parsedData.data.height,
+      weight: parsedData.data.weight,
+      wellness_goal: parsedData.data.wellness_goal,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', user.id);
+
+  if (error) {
+    console.error('Error updating wellness profile:', error);
+    return { success: false, error: 'Could not update your wellness profile.' };
+  }
+  
+  revalidatePath('/nutrition');
+  revalidatePath('/account');
+  return { success: true };
+}
