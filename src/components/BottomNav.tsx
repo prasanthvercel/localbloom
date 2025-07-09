@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calculator, Home, LayoutGrid, HeartPulse, Camera } from 'lucide-react';
+import { Calculator, Home, LayoutGrid, HeartPulse, Camera, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
