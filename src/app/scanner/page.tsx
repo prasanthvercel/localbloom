@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Camera, ScanLine, Sparkles, Languages, HeartPulse, Apple, Check, X } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Sparkles, Languages, HeartPulse, Apple, Check, X, Upload } from 'lucide-react';
 import { analyzeProductImage, type AnalyzeProductImageOutput } from '@/ai/flows/analyze-product-image-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -29,6 +29,7 @@ export default function ScannerPage() {
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [remainingScans, setRemainingScans] = useState(0);
@@ -52,7 +53,6 @@ export default function ScannerPage() {
   useEffect(() => {
     const getCameraPermission = async () => {
       if (!navigator.mediaDevices?.getUserMedia) {
-        setCameraError({ title: 'Camera Not Supported', description: 'Your browser does not support camera access.' });
         setHasCameraPermission(false);
         return;
       }
@@ -63,12 +63,10 @@ export default function ScannerPage() {
       } catch (error) {
         setHasCameraPermission(false);
         if (error instanceof DOMException) {
-          if (error.name === 'NotFoundError') {
-            setCameraError({ title: 'Camera Not Found', description: 'No camera was found on your device.' });
-          } else if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-            setCameraError({ title: 'Camera Access Denied', description: 'Please allow camera access in your browser settings.' });
-          } else {
-            setCameraError({ title: 'Camera Error', description: `Could not access the camera: ${error.message}` });
+          if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+             setCameraError({ title: 'Camera Access Denied', description: 'Please allow camera access in your browser settings to use this feature.' });
+          } else if (error.name !== 'NotFoundError') { // Don't show an error if camera is just not found
+             setCameraError({ title: 'Camera Error', description: `An unexpected error occurred: ${error.message}` });
           }
         } else {
           setCameraError({ title: 'Unexpected Error', description: 'An error occurred accessing the camera.' });
@@ -96,8 +94,15 @@ export default function ScannerPage() {
       if (isSubscribed) {
         setRemainingScans(Infinity); // Subscribed users have unlimited scans
       } else {
-        // FOR TESTING: Force remaining scans to 0 to test subscription prompt
-        setRemainingScans(0);
+        const today = new Date();
+        const lastScan = profile?.last_scan_date ? new Date(profile.last_scan_date) : null;
+        let scanCount = profile?.scan_count || 0;
+
+        if (lastScan && (lastScan.getMonth() !== today.getMonth() || lastScan.getFullYear() !== today.getFullYear())) {
+            scanCount = 0;
+        }
+
+        setRemainingScans(Math.max(0, FREE_SCAN_LIMIT - scanCount));
       }
       setIsInitializing(false);
     };
@@ -173,6 +178,25 @@ export default function ScannerPage() {
         analyzeImage(capturedImage);
     }
   };
+  
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const photoDataUri = e.target?.result as string;
+            setCapturedImage(photoDataUri);
+            setCaptureState('captured');
+            setAnalysisResult(null);
+        };
+        reader.readAsDataURL(file);
+    }
+  };
+
 
   const renderContent = () => {
     if (isInitializing) {
@@ -195,7 +219,17 @@ export default function ScannerPage() {
           {captureState === 'captured' && capturedImage ? (
              <Image src={capturedImage} alt="Captured product" fill className="object-cover" />
           ) : (
-            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+            <>
+              {hasCameraPermission ? (
+                <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-muted text-muted-foreground">
+                    <Upload className="h-16 w-16 mb-4" />
+                    <p className="font-semibold text-lg">Upload an Image</p>
+                    <p className="text-sm">No camera detected. Please upload a file.</p>
+                </div>
+              )}
+            </>
           )}
           
           {isLoading && (
@@ -206,6 +240,13 @@ export default function ScannerPage() {
           )}
         </div>
         <canvas ref={canvasRef} className="hidden" />
+         <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            accept="image/*"
+        />
 
         {captureState === 'idle' ? (
            <div className="flex flex-col sm:flex-row gap-4 items-center">
@@ -222,14 +263,20 @@ export default function ScannerPage() {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={handleCapture} disabled={isLoading || !user} className="w-full sm:w-1/2 h-16 text-lg sm:self-end">
-              <Camera className="mr-2 h-6 w-6" /> Capture Image
-            </Button>
+            {hasCameraPermission ? (
+                <Button onClick={handleCapture} disabled={isLoading || !user} className="w-full sm:w-1/2 h-16 text-lg sm:self-end">
+                  <Camera className="mr-2 h-6 w-6" /> Capture Image
+                </Button>
+            ) : (
+                 <Button onClick={handleUploadClick} disabled={isLoading || !user} className="w-full sm:w-1/2 h-16 text-lg sm:self-end">
+                    <Upload className="mr-2 h-6 w-6" /> Upload Image
+                </Button>
+            )}
           </div>
         ) : (
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
              <Button onClick={handleRetake} variant="outline" size="lg" className="w-full sm:w-auto">
-                <X className="mr-2 h-5 w-5"/> Retake
+                <X className="mr-2 h-5 w-5"/> {hasCameraPermission ? 'Retake' : 'Choose another image'}
              </Button>
              <Button onClick={handleConfirmAndAnalyze} size="lg" className="w-full sm:w-auto">
                 <Check className="mr-2 h-5 w-5"/> Analyze with AI
