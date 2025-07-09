@@ -77,7 +77,7 @@ export default function ScannerPage() {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        router.push('/login?redirect=/scanner');
+        router.push('/scanner/gate');
         return;
       }
       
@@ -97,7 +97,7 @@ export default function ScannerPage() {
           currentScanCount = 0;
         }
       }
-      setRemainingScans(Math.max(0, FREE_SCAN_LIMIT - currentScanCount));
+      setRemainingScans(0);
 
       setIsInitializing(false);
     };
