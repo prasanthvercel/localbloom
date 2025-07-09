@@ -29,6 +29,7 @@ function NavItem({ item, isActive }: { item: { href: string; label: string; icon
 const baseNavItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/marketplace', label: 'Categories', icon: LayoutGrid },
+  { href: '/calculator', label: 'Expenses', icon: Calculator, auth: true, role: 'customer' },
   { href: '/nutrition', label: 'Nutrition', icon: HeartPulse, auth: true, role: 'customer' },
   { href: '/account', label: 'Profile', icon: User, auth: true },
 ];
@@ -58,6 +59,7 @@ export function BottomNav() {
     if (href.includes('marketplace')) return pathname.startsWith('/marketplace') || pathname.startsWith('/products');
     if (href.includes('scanner')) return pathname.startsWith('/scanner');
     if (href.includes('nutrition')) return pathname.startsWith('/nutrition');
+    if (href.includes('calculator')) return pathname.startsWith('/calculator');
     return pathname.startsWith(href);
   }
 
