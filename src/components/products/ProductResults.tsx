@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Search as SearchIcon, SearchX, Loader2, ArrowLeft } from 'lucide-react';
-import { ProductResultCard, type ProductWithVendor } from '@/components/ProductResultCard';
+import { ProductResultCard } from '@/components/products/ProductResultCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import type { User } from '@supabase/supabase-js';
-import type { ShoppingListItem } from '@/app/page';
+import type { ShoppingListItem, ProductWithVendor } from '@/types';
 import { ShoppingList } from '../shopping-list/ShoppingList';
 import Link from 'next/link';
 

@@ -2,8 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import type { User } from '@supabase/supabase-js';
 import { ProductResults } from '@/components/products/ProductResults';
-import type { ProductWithVendor } from '@/types';
-import type { ShoppingListItem } from '@/app/shopping-list/page';
+import type { ProductWithVendor, ShoppingListItem } from '@/types';
 
 async function getProducts(supabase: ReturnType<typeof createClient>, category?: string, query?: string): Promise<ProductWithVendor[]> {
   const lowercasedQuery = query?.toLowerCase().trim() ?? '';

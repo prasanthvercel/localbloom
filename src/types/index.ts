@@ -34,3 +34,15 @@ export type ProductWithVendor = Product & {
   vendorId: string;
   vendorName: string;
 };
+
+export type ShoppingListItem = {
+  id: number;
+  user_id: string;
+  product_name: string;
+  vendor_name: string;
+  price: number;
+  quantity: number;
+  image_url: string;
+  bought: boolean;
+  created_at: string;
+};

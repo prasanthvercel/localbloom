@@ -3,8 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import type { User } from '@supabase/supabase-js';
 import { VendorDashboardPage } from '@/components/vendor/VendorDashboardPage';
-import type { ShoppingListItem } from './shopping-list/page';
-import type { Vendor } from '@/types';
+import type { ShoppingListItem, Vendor } from '@/types';
 
 export default async function Home() {
   const cookieStore = cookies();

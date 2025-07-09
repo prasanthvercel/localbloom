@@ -10,7 +10,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-export const AnalyzeProductImageInputSchema = z.object({
+const AnalyzeProductImageInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
@@ -22,7 +22,7 @@ export type AnalyzeProductImageInput = z.infer<
   typeof AnalyzeProductImageInputSchema
 >;
 
-export const AnalyzeProductImageOutputSchema = z.object({
+const AnalyzeProductImageOutputSchema = z.object({
   isFoodItem: z.boolean().describe('Whether the image contains a recognizable food item.'),
   productName: z.string().describe('The common name of the identified food item (e.g., "Apple", "Banana"). This should be in English.'),
   description: z
