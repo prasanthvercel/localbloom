@@ -24,7 +24,7 @@ export function SubscriptionPromptDialog({ isOpen, setIsOpen }: SubscriptionProm
   const router = useRouter();
 
   const handleViewPlans = () => {
-    router.push('/account');
+    router.push('/subscription');
     setIsOpen(false);
   };
   
