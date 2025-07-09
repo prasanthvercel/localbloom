@@ -37,7 +37,7 @@ export function DashboardPage({ user, shoppingListItems }: DashboardPageProps) {
   const featuredVendors = allVendors.slice(0, 3);
   
   const plugin = React.useRef(
-    Autoplay({ delay: 3000, stopOnInteraction: true })
+    Autoplay({ delay: 3000, stopOnInteraction: true, stopOnMouseEnter: true })
   )
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
@@ -92,8 +92,6 @@ export function DashboardPage({ user, shoppingListItems }: DashboardPageProps) {
               loop: true,
             }}
             className="w-full"
-            onMouseEnter={plugin.current.stop}
-            onMouseLeave={plugin.current.reset}
           >
             <CarouselContent>
               {yoyoCarouselItems.map((item, index) => (
