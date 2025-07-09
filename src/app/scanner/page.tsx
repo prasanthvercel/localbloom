@@ -89,21 +89,25 @@ export default function ScannerPage() {
       
       await getCameraPermission();
         
-      const { data: profile } = await supabase.from('profiles').select('scan_count, last_scan_date').eq('id', user.id).single();
+      const { data: profile } = await supabase.from('profiles').select('scan_count, last_scan_date, subscription_tier').eq('id', user.id).single();
       
-      let currentScanCount = 0;
-      if (profile) {
-        const today = new Date();
-        const lastScan = profile.last_scan_date ? new Date(profile.last_scan_date) : null;
-        currentScanCount = profile.scan_count || 0;
+      const isSubscribed = profile?.subscription_tier && profile.subscription_tier !== 'free';
 
-        if (lastScan && (lastScan.getMonth() !== today.getMonth() || lastScan.getFullYear() !== today.getFullYear())) {
-          currentScanCount = 0;
+      if (isSubscribed) {
+        setRemainingScans(Infinity); // Subscribed users have unlimited scans
+      } else {
+        let currentScanCount = 0;
+        if (profile) {
+          const today = new Date();
+          const lastScan = profile.last_scan_date ? new Date(profile.last_scan_date) : null;
+          currentScanCount = profile.scan_count || 0;
+
+          if (lastScan && (lastScan.getMonth() !== today.getMonth() || lastScan.getFullYear() !== today.getFullYear())) {
+            currentScanCount = 0;
+          }
         }
+        setRemainingScans(FREE_SCAN_LIMIT - currentScanCount);
       }
-      // Set to 0 for testing subscription prompt
-      setRemainingScans(0);
-
       setIsInitializing(false);
     };
 
@@ -121,6 +125,8 @@ export default function ScannerPage() {
     
     if (remainingScans <= 0) {
       setShowSubscriptionPrompt(true);
+      setCaptureState('idle'); // Go back to camera view
+      setCapturedImage(null);
       return;
     }
 
@@ -130,14 +136,14 @@ export default function ScannerPage() {
       const result = await analyzeProductImage({ photoDataUri, language, userId: user.id });
       setAnalysisResult(result);
 
-      if (result.isFoodItem) {
+      if (result.productName) {
         setRemainingScans(prev => Math.max(0, prev - 1));
         toast({ title: 'Analysis Complete!', description: `Identified: ${result.productName}.` });
-        if (result.nutrition) {
+        if (result.isFoodItem && result.nutrition) {
             setItemToLog({ name: result.productName, nutrition: result.nutrition });
         }
       } else {
-         toast({ variant: 'destructive', title: 'Not a Food Item', description: 'The scanner is optimized for food items. Please try again.' });
+         toast({ variant: 'destructive', title: 'Analysis Failed', description: "We couldn't identify the item in the image. Please try a clearer picture." });
       }
     } catch (error) {
       console.error('Error analyzing image:', error);
@@ -259,13 +265,13 @@ export default function ScannerPage() {
             <CardHeader>
               <CardTitle className="text-2xl font-bold flex items-center gap-2"><ScanLine className="text-primary"/> Product Scanner</CardTitle>
               <CardDescription>
-                Point your camera at a food item and capture an image to get started.
+                Point your camera at an item and capture an image to get started.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {renderContent()}
 
-              {analysisResult && analysisResult.isFoodItem && (
+              {analysisResult && analysisResult.productName && (
                   <Card className="bg-muted/50">
                       <CardHeader>
                           <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary"/> Analysis Result</CardTitle>
@@ -274,7 +280,7 @@ export default function ScannerPage() {
                       <CardContent className="space-y-4">
                         <p className="text-sm">{analysisResult.description}</p>
                         
-                        {analysisResult.nutrition && (
+                        {analysisResult.isFoodItem && analysisResult.nutrition && (
                             <Alert>
                                 <AlertTitle className="font-bold">Nutritional Information (per serving)</AlertTitle>
                                 <AlertDescription>
@@ -288,7 +294,7 @@ export default function ScannerPage() {
                             </Alert>
                         )}
 
-                        {analysisResult.personalizedAdvice && (
+                        {analysisResult.isFoodItem && analysisResult.personalizedAdvice && (
                             <Alert className="mt-4 border-primary/50 bg-primary/10">
                                 <HeartPulse className="h-4 w-4 text-primary" />
                                 <AlertTitle className="text-primary font-bold">Personalized Advice</AlertTitle>
@@ -303,7 +309,7 @@ export default function ScannerPage() {
                        <div className="px-6 py-4 space-y-4">
                          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                             <h3 className="text-lg font-semibold leading-none tracking-tight">Price Comparison</h3>
-                             {user?.user_metadata?.role === 'customer' && analysisResult.nutrition && (
+                             {analysisResult.isFoodItem && user?.user_metadata?.role === 'customer' && analysisResult.nutrition && (
                                 <Button variant="outline" size="sm" onClick={() => setShowLogDialog(true)}>
                                     <Apple className="mr-2 h-4 w-4" /> Add to Diet Log
                                 </Button>

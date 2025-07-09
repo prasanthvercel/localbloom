@@ -17,7 +17,7 @@ const AnalyzeProductImageInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
-      "A photo of a food item, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "A photo of a product, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
   language: z.string().describe('The language for the output description.'),
   userId: z.string().uuid().optional().describe('The ID of the user performing the scan. Optional for anonymous users.'),
@@ -44,12 +44,12 @@ const NutritionInfoSchema = z.object({
 
 const AnalyzeProductImageOutputSchema = z.object({
   isFoodItem: z.boolean().describe('Whether the image contains a recognizable food item.'),
-  productName: z.string().describe('The common name of the identified food item (e.g., "Apple", "Banana"). This should be in English.'),
+  productName: z.string().describe('The common name of the identified product (e.g., "Apple", "Hand-woven Basket"). This should be in English.'),
   description: z
     .string()
-    .describe('A helpful, engaging description of the food item and tips (like when to eat it). This description MUST be in the requested language. Do not include nutritional info here.'),
+    .describe('A helpful, engaging description of the product. This description MUST be in the requested language. Do not include nutritional info here.'),
   nutrition: NutritionInfoSchema.nullable().describe('Structured nutritional information for the food item. Null if not a food item.'),
-  personalizedAdvice: z.string().describe("Personalized advice on whether this food fits the user's dietary goals. This advice MUST be in the requested language."),
+  personalizedAdvice: z.string().describe("Personalized advice on whether this food fits the user's dietary goals. Null or empty if not a food item. This advice MUST be in the requested language."),
   foundProducts: z.array(FoundProductSchema).describe('A list of products found in the marketplace that match the identified item, ordered by price.'),
 });
 export type AnalyzeProductImageOutput = z.infer<
@@ -79,7 +79,7 @@ const analysisPrompt = ai.definePrompt({
         nutrition: AnalyzeProductImageOutputSchema.shape.nutrition,
         personalizedAdvice: AnalyzeProductImageOutputSchema.shape.personalizedAdvice,
     }) },
-    prompt: `You are an expert nutritionist and personal wellness coach for a marketplace app. Your task is to analyze an image of a single food item and provide personalized advice if available.
+    prompt: `You are a product recognition expert for a marketplace app. Your task is to analyze an image of a product and provide details about it.
 
   CONTEXT:
   - User's selected language: {{{language}}}
@@ -89,19 +89,17 @@ const analysisPrompt = ai.definePrompt({
   - User's Health Conditions: {{#if health_conditions}}{{{health_conditions}}}{{else}}None specified{{/if}}
   
   ANALYSIS STEPS:
-  1. First, determine if the image clearly shows a food item. If not, set 'isFoodItem' to false and the other fields to empty strings or null.
-  2. If it is a food item, identify its common name. Set 'productName' to this name in English.
-  3. Provide structured nutritional information for a standard serving size (e.g., 100g) in the 'nutrition' field.
-  4. Write a friendly and helpful description (2-4 sentences) about the item. Include a fun fact or a tip on when it's best to eat. DO NOT include nutritional values in the description text itself.
-  5. CRITICAL: If the user has provided wellness data, provide personalized advice.
-      - First, check for health conditions. If a condition makes the food unsuitable (e.g., high sugar for diabetes, dairy for lactose intolerance), this should be the primary advice. For example: "This item is high in sugar and may not be suitable for your diabetic diet."
-      - If no critical health conflicts exist, analyze based on wellness goal:
-        - If goal is "Weight Loss", analyze if the food is good for a calorie-deficit diet.
-        - If goal is "Muscle Gain", analyze its protein content and suitability for post-workout.
-        - If goal is "General Health", analyze its overall nutritional benefits.
-      - If no goal is specified, provide general health tips about the food, OR if no user wellness data is provided at all, return an empty string for this field.
-      - Keep the advice concise, encouraging, and actionable (1-3 sentences).
-  6. The final 'description' and 'personalizedAdvice' fields MUST be translated into the user's requested language: {{{language}}}.
+  1.  First, identify the primary product in the image. Set 'productName' to its common name in English. If you cannot identify a product, return an empty string for 'productName' and other fields.
+  2.  Next, determine if the identified product is a food item. Set 'isFoodItem' to true or false.
+  3.  Write a friendly and helpful description (2-4 sentences) about the product.
+  4.  If and ONLY IF 'isFoodItem' is true, perform the following nutritional analysis:
+      a. Provide structured nutritional information for a standard serving size in the 'nutrition' field.
+      b. CRITICAL: If the user has provided wellness data, provide personalized dietary advice.
+          - Check for health conditions. If a condition makes the food unsuitable (e.g., high sugar for diabetes), this should be the primary advice.
+          - If no critical health conflicts exist, analyze based on the wellness goal (Weight Loss, Muscle Gain, etc.).
+          - If no user wellness data is provided, return an empty string for 'personalizedAdvice'.
+  5.  If the product is NOT a food item, 'nutrition' must be null and 'personalizedAdvice' must be an empty string.
+  6.  The final 'description' and 'personalizedAdvice' fields MUST be translated into the user's requested language: {{{language}}}.
 
   Image to analyze: {{media url=photoDataUri}}
   `,
@@ -146,9 +144,9 @@ const analyzeProductImageFlow = ai.defineFlow(
 
     let foundProducts: z.infer<typeof FoundProductSchema>[] = [];
     
-    // If analysis is successful and it's a food item, search for products.
+    // If analysis is successful and a product was identified, search for it.
     // If user is logged in, also update their scan count.
-    if (analysis && analysis.isFoodItem && analysis.productName) {
+    if (analysis && analysis.productName) {
         if (input.userId && profile) {
             const today = new Date();
             const lastScan = profile.last_scan_date ? new Date(profile.last_scan_date) : null;
