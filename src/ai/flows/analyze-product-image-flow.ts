@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow to analyze a product image and find it in the marketplace.
@@ -40,6 +41,7 @@ const AnalyzeProductImageOutputSchema = z.object({
   description: z
     .string()
     .describe('A helpful, engaging description of the food item including nutritional information (like calories) and tips (like when to eat it). This description MUST be in the requested language.'),
+  personalizedAdvice: z.string().describe("Personalized advice on whether this food fits the user's dietary goals. This advice MUST be in the requested language."),
   foundProducts: z.array(FoundProductSchema).describe('A list of products found in the marketplace that match the identified item, ordered by price.'),
 });
 export type AnalyzeProductImageOutput = z.infer<
@@ -57,20 +59,37 @@ const analysisPrompt = ai.definePrompt({
     input: { schema: z.object({
         photoDataUri: AnalyzeProductImageInputSchema.shape.photoDataUri,
         language: AnalyzeProductImageInputSchema.shape.language,
+        wellness_goal: z.string().optional().nullable(),
+        height: z.number().optional().nullable(),
+        weight: z.number().optional().nullable(),
     }) },
     output: { schema: z.object({
         isFoodItem: AnalyzeProductImageOutputSchema.shape.isFoodItem,
         productName: AnalyzeProductImageOutputSchema.shape.productName,
         description: AnalyzeProductImageOutputSchema.shape.description,
+        personalizedAdvice: AnalyzeProductImageOutputSchema.shape.personalizedAdvice,
     }) },
-    prompt: `You are a food and nutrition expert for a marketplace app. Your task is to analyze an image of a single food item.
+    prompt: `You are an expert nutritionist and personal wellness coach for a marketplace app. Your task is to analyze an image of a single food item and provide personalized advice.
 
-  1.  First, determine if the image clearly shows a food item. If not, set 'isFoodItem' to false and the other fields to empty strings.
-  2.  If it is a food item, identify its common name. Set 'productName' to this name in English.
-  3.  Then, write a friendly and helpful description (2-4 sentences) about the item. Include:
-      - Approximate calories.
+  CONTEXT:
+  - User's selected language: {{{language}}}
+  - User's wellness goal: {{#if wellness_goal}}{{{wellness_goal}}}{{else}}Not specified{{/if}}
+  - User's height: {{#if height}}{{{height}}} cm{{else}}Not specified{{/if}}
+  - User's weight: {{#if weight}}{{{weight}}} kg{{else}}Not specified{{/if}}
+  
+  ANALYSIS STEPS:
+  1. First, determine if the image clearly shows a food item. If not, set 'isFoodItem' to false and the other fields to empty strings.
+  2. If it is a food item, identify its common name. Set 'productName' to this name in English.
+  3. Write a friendly and helpful description (2-4 sentences) about the item. Include:
+      - Approximate calories and key nutrients (e.g., protein, fiber).
       - A fun fact or a tip on when it's best to eat.
-  4.  CRITICAL: Translate this entire description into the following language: {{{language}}}. The final 'description' field must be in this language.
+  4. CRITICAL: Based on the user's wellness goal, provide personalized advice.
+      - If goal is "Weight Loss", analyze if the food is good for a calorie-deficit diet.
+      - If goal is "Muscle Gain", analyze its protein content and suitability for post-workout.
+      - If goal is "General Health", analyze its overall nutritional benefits.
+      - If no goal is specified, provide general health tips about the food.
+      - Keep the advice concise, encouraging, and actionable (1-3 sentences).
+  5. The final 'description' and 'personalizedAdvice' fields MUST be translated into the user's requested language: {{{language}}}.
 
   Image to analyze: {{media url=photoDataUri}}
   `,
@@ -86,10 +105,10 @@ const analyzeProductImageFlow = ai.defineFlow(
     const cookieStore = cookies();
     const supabase = createClient(cookieStore);
 
-    // Fetch profile to check/reset count
+    // Fetch profile to check/reset count and get wellness data
     const { data: profile, error: fetchError } = await supabase
       .from('profiles')
-      .select('scan_count, last_scan_date')
+      .select('scan_count, last_scan_date, height, weight, wellness_goal')
       .eq('id', input.userId)
       .single();
 
@@ -114,7 +133,10 @@ const analyzeProductImageFlow = ai.defineFlow(
     // Call the model
     const { output: analysis } = await analysisPrompt({
         photoDataUri: input.photoDataUri,
-        language: input.language
+        language: input.language,
+        wellness_goal: profile?.wellness_goal,
+        height: profile?.height,
+        weight: profile?.weight,
     });
 
     let foundProducts: z.infer<typeof FoundProductSchema>[] = [];

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -7,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Camera, ScanLine, Sparkles, Languages, Info } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Sparkles, Languages, Info, HeartPulse } from 'lucide-react';
 import { analyzeProductImage, type AnalyzeProductImageOutput } from '@/ai/flows/analyze-product-image-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -216,7 +217,18 @@ export default function ScannerPage() {
                           <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary"/> Analysis Result</CardTitle>
                           <CardDescription>Product identified as: <span className="font-bold text-foreground">{analysisResult.productName}</span></CardDescription>
                       </CardHeader>
-                      <CardContent><p className="text-sm">{analysisResult.description}</p></CardContent>
+                      <CardContent>
+                        <p className="text-sm">{analysisResult.description}</p>
+                        {analysisResult.personalizedAdvice && (
+                            <Alert className="mt-4 border-primary/50 bg-primary/10">
+                                <HeartPulse className="h-4 w-4 text-primary" />
+                                <AlertTitle className="text-primary font-bold">Personalized Advice</AlertTitle>
+                                <AlertDescription className="text-primary/90">
+                                    {analysisResult.personalizedAdvice}
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                      </CardContent>
                       
                        <Separator className="my-0" />
                        <div className="px-6 py-4">

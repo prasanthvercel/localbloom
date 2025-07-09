@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -13,6 +14,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { User } from '@supabase/supabase-js';
 import type { Profile } from '@/types';
+import { Separator } from '../ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const profileSchema = z.object({
   full_name: z.string().min(3, { message: 'Full name must be at least 3 characters.' }),
@@ -22,6 +25,9 @@ const profileSchema = z.object({
   country: z.string().min(2, { message: 'Country is required.' }),
   pincode: z.string().regex(/^\d{5,6}$/, { message: 'Invalid pincode format.' }),
   mobile_number: z.string().regex(/^\+?[1-9]\d{1,14}$/, { message: 'Invalid mobile number.' }),
+  height: z.union([z.literal(''), z.coerce.number().positive('Height must be a positive number.')]).optional().nullable(),
+  weight: z.union([z.literal(''), z.coerce.number().positive('Weight must be a positive number.')]).optional().nullable(),
+  wellness_goal: z.string().optional().nullable(),
 });
 
 interface AccountFormProps {
@@ -45,6 +51,9 @@ export function AccountForm({ user, profile }: AccountFormProps) {
       country: profile?.country || '',
       pincode: profile?.pincode || '',
       mobile_number: profile?.mobile_number || '',
+      height: profile?.height || '',
+      weight: profile?.weight || '',
+      wellness_goal: profile?.wellness_goal || '',
     },
   });
 
@@ -61,12 +70,19 @@ export function AccountForm({ user, profile }: AccountFormProps) {
       return;
     }
 
+    const profileDataForUpsert = {
+      ...values,
+      height: values.height === '' ? null : values.height,
+      weight: values.weight === '' ? null : values.weight,
+      wellness_goal: values.wellness_goal || null,
+    };
+    
     const { error: profileError } = await supabase
       .from('profiles')
       .upsert({
         id: user.id,
         updated_at: new Date().toISOString(),
-        ...values,
+        ...profileDataForUpsert,
       });
 
     if (profileError) {
@@ -195,6 +211,65 @@ export function AccountForm({ user, profile }: AccountFormProps) {
                     )}
                   />
               </div>
+
+              <Separator />
+
+              <div>
+                <CardTitle className="text-xl">Wellness Goals</CardTitle>
+                <CardDescription className="text-sm">This helps us provide personalized nutritional advice from the scanner.</CardDescription>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <FormField
+                    control={form.control}
+                    name="height"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Height (cm)</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="e.g. 175" {...field} value={field.value ?? ''} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                 <FormField
+                    control={form.control}
+                    name="weight"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Weight (kg)</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="e.g. 70" {...field} value={field.value ?? ''} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+              </div>
+                <FormField
+                    control={form.control}
+                    name="wellness_goal"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Primary Goal</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value ?? ''}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select your wellness goal" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Weight Loss">Weight Loss</SelectItem>
+                            <SelectItem value="Maintain Weight">Maintain Weight</SelectItem>
+                            <SelectItem value="Muscle Gain">Muscle Gain</SelectItem>
+                            <SelectItem value="General Health">General Health</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Saving...' : 'Save Changes'}

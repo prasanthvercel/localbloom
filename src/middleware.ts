@@ -1,4 +1,5 @@
 
+
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
 
@@ -48,20 +49,15 @@ export async function middleware(request: NextRequest) {
     const currentPath = request.nextUrl.pathname;
     
     // For customers, check their `profiles` table.
-    if (!isVendor && !currentPath.startsWith('/account')) {
+    // Skip this check if they are already on the account page or trying to log out.
+    if (!isVendor && !currentPath.startsWith('/account') && !currentPath.startsWith('/auth/logout')) {
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('full_name, address, city, state, pincode, mobile_number')
+        .select('full_name, mobile_number')
         .eq('id', user.id)
         .single();
 
-      const isProfileIncomplete = !profile || 
-                                  !profile.full_name ||
-                                  !profile.address ||
-                                  !profile.city ||
-                                  !profile.state ||
-                                  !profile.pincode ||
-                                  !profile.mobile_number;
+      const isProfileIncomplete = !profile || !profile.full_name || !profile.mobile_number;
 
       if (isProfileIncomplete && (error?.code === 'PGRST116' || !error)) {
         const url = request.nextUrl.clone()

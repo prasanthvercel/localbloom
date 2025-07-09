@@ -59,7 +59,11 @@ export type Profile = {
     country: string | null;
     pincode: string | null;
     mobile_number: string | null;
-    // New fields for scanner usage
+    // Scanner usage
     scan_count: number | null;
     last_scan_date: string | null; // as ISO string
+    // Wellness data
+    height: number | null; // in cm
+    weight: number | null; // in kg
+    wellness_goal: string | null;
 };
