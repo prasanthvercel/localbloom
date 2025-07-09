@@ -19,7 +19,7 @@ export default async function VendorProductsPage() {
   // First, get the vendor's ID
   const { data: vendor, error: vendorError } = await supabase
     .from('vendors')
-    .select('id')
+    .select('id, category')
     .eq('user_id', user.id)
     .single();
 
@@ -44,7 +44,11 @@ export default async function VendorProductsPage() {
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-         <ProductListClient initialProducts={products || []} vendorId={vendor.id} />
+         <ProductListClient 
+            initialProducts={products || []} 
+            vendorId={vendor.id} 
+            vendorCategory={vendor.category || ''}
+         />
       </main>
     </div>
   );
