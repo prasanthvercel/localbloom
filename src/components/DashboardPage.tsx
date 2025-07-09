@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -14,6 +15,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search as SearchIcon, Leaf, Cake, Paintbrush, Utensils, Shirt, ArrowRight, Sparkles } from 'lucide-react';
 import { VendorCard } from './VendorCard';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import Autoplay from "embla-carousel-autoplay"
 
 interface DashboardPageProps {
     user: User | null;
@@ -32,6 +35,10 @@ export function DashboardPage({ user, shoppingListItems }: DashboardPageProps) {
   const router = useRouter();
   const categories = [...new Set(allVendors.map(vendor => vendor.category))];
   const featuredVendors = allVendors.slice(0, 3);
+  
+  const plugin = React.useRef(
+    Autoplay({ delay: 5000, stopOnInteraction: true })
+  )
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -41,6 +48,27 @@ export function DashboardPage({ user, shoppingListItems }: DashboardPageProps) {
       router.push(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
+  
+  const carouselItems = [
+    {
+      title: 'Fresh Finds, Local Vibes',
+      description: 'Discover the best of your community\'s market, right at your fingertips.',
+      image: 'https://placehold.co/1200x400.png',
+      hint: 'fresh produce',
+    },
+    {
+      title: 'Handcrafted Goods, Made with Love',
+      description: 'From artisanal bread to handmade crafts, find unique items from local vendors.',
+      image: 'https://placehold.co/1200x400.png',
+      hint: 'artisanal bread',
+    },
+    {
+      title: 'Support Your Local Community',
+      description: 'Every purchase supports a local family and strengthens our community.',
+      image: 'https://placehold.co/1200x400.png',
+      hint: 'community market',
+    },
+  ];
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -52,37 +80,52 @@ export function DashboardPage({ user, shoppingListItems }: DashboardPageProps) {
           )}
 
           {/* Hero Section */}
-          <Card className="relative overflow-hidden shadow-xl border-none rounded-2xl">
-            <Image 
-              src="https://placehold.co/1200x400.png"
-              alt="Fresh produce banner"
-              width={1200}
-              height={400}
-              className="w-full h-56 sm:h-80 object-cover"
-              data-ai-hint="farmers market banner"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/20" />
-            <CardContent className="absolute inset-0 flex flex-col justify-center p-8 sm:p-12">
-              <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white mb-3 font-headline">
-                Fresh Finds, Local Vibes
-              </h1>
-              <p className="text-lg text-white/80 max-w-lg mb-6">
-                Discover the best of your community's market, right at your fingertips.
-              </p>
-              <form onSubmit={handleSearch} className="relative max-w-lg">
-                  <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input 
-                    name="search"
-                    placeholder="Search for apples, bread, t-shirts..." 
-                    className="pl-12 w-full bg-white/90 text-foreground h-14 text-base rounded-full shadow-lg border-transparent focus:ring-primary focus:ring-2"
-                  />
-                  <Button type="submit" className="absolute right-2.5 top-1/2 -translate-y-1/2 h-10 rounded-full">
-                    Search
-                  </Button>
-              </form>
-            </CardContent>
-          </Card>
+          <Carousel
+            plugins={[plugin.current]}
+            className="w-full"
+            onMouseEnter={plugin.current.stop}
+            onMouseLeave={plugin.current.reset}
+          >
+            <CarouselContent>
+              {carouselItems.map((item, index) => (
+                <CarouselItem key={index}>
+                  <Card className="relative overflow-hidden shadow-xl border-none rounded-2xl">
+                    <Image
+                      src={item.image}
+                      alt={item.title}
+                      width={1200}
+                      height={400}
+                      className="w-full h-56 sm:h-80 object-cover"
+                      data-ai-hint={item.hint}
+                      priority={index === 0}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/20" />
+                    <CardContent className="absolute inset-0 flex flex-col justify-center p-8 sm:p-12">
+                      <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white mb-3 font-headline">
+                        {item.title}
+                      </h1>
+                      <p className="text-lg text-white/80 max-w-lg mb-6">
+                        {item.description}
+                      </p>
+                      <form onSubmit={handleSearch} className="relative max-w-lg">
+                        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input
+                          name="search"
+                          placeholder="Search for apples, bread, t-shirts..."
+                          className="pl-12 w-full bg-white/90 text-foreground h-14 text-base rounded-full shadow-lg border-transparent focus:ring-primary focus:ring-2"
+                        />
+                        <Button type="submit" className="absolute right-2.5 top-1/2 -translate-y-1/2 h-10 rounded-full">
+                          Search
+                        </Button>
+                      </form>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="left-4" />
+            <CarouselNext className="right-4" />
+          </Carousel>
 
 
           {/* Categories Section */}
