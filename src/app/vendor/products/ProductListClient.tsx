@@ -59,7 +59,7 @@ export function ProductListClient({ initialProducts, vendorId }: ProductListClie
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle>My Products</CardTitle>
-                            <CardDescription>Add, edit, or remove products from your shop.</CardDescription>
+                            <CardDescription>Manage your inventory. Add new items, update pricing, and more.</CardDescription>
                         </div>
                         <Button onClick={handleAddProduct}>
                             <PlusCircle className="mr-2 h-4 w-4" />
@@ -84,7 +84,7 @@ export function ProductListClient({ initialProducts, vendorId }: ProductListClie
                                     products.map(product => (
                                         <TableRow key={product.id}>
                                             <TableCell>
-                                                <Image src={product.image || 'https://placehold.co/100x100.png'} alt={product.name} width={40} height={40} className="rounded-md object-cover" />
+                                                <Image src={product.image || 'https://placehold.co/100x100.png'} alt={product.name} width={40} height={40} className="rounded-md object-cover" data-ai-hint="product photo" />
                                             </TableCell>
                                             <TableCell className="font-medium">{product.name}</TableCell>
                                             <TableCell>
