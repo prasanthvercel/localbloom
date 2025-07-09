@@ -7,16 +7,16 @@ import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
-const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-const keySecret = process.env.RAZORPAY_KEY_SECRET;
+const keyId = "rzp_test_jvsIRxawUh4gGu";
+const keySecret = "4Ym5sw2c52FJUN7R2iNsxQ1a";
 
 if (!keyId || !keySecret) {
     console.warn("Razorpay keys are not configured. Payment will not work.");
 }
 
 const razorpayInstance = new Razorpay({
-  key_id: keyId!,
-  key_secret: keySecret!,
+  key_id: keyId,
+  key_secret: keySecret,
 });
 
 type CreateOrderParams = {

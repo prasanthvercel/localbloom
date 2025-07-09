@@ -106,7 +106,7 @@ export default function SubscriptionPage() {
             }
 
             const options = {
-                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                key: "rzp_test_jvsIRxawUh4gGu",
                 amount: order.amount,
                 currency: order.currency,
                 name: 'LocalBloom',
