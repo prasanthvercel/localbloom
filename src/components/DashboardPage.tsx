@@ -49,7 +49,7 @@ export function DashboardPage({ user, shoppingListItems }: DashboardPageProps) {
     }
   };
   
-  const carouselItems = [
+  const baseCarouselItems = [
     {
       title: 'Fresh Finds, Local Vibes',
       description: 'Discover the best of your community\'s market, right at your fingertips.',
@@ -70,6 +70,12 @@ export function DashboardPage({ user, shoppingListItems }: DashboardPageProps) {
     },
   ];
 
+  // Create a "yoyo" effect by mirroring the items without the first and last
+  const yoyoCarouselItems = [
+    ...baseCarouselItems, 
+    ...baseCarouselItems.slice(1, baseCarouselItems.length - 1).reverse()
+  ];
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
@@ -82,12 +88,15 @@ export function DashboardPage({ user, shoppingListItems }: DashboardPageProps) {
           {/* Hero Section */}
           <Carousel
             plugins={[plugin.current]}
+            opts={{
+              loop: true,
+            }}
             className="w-full"
             onMouseEnter={plugin.current.stop}
             onMouseLeave={plugin.current.reset}
           >
             <CarouselContent>
-              {carouselItems.map((item, index) => (
+              {yoyoCarouselItems.map((item, index) => (
                 <CarouselItem key={index}>
                   <Card className="relative overflow-hidden shadow-xl border-none rounded-2xl">
                     <Image
