@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -32,7 +33,7 @@ const baseNavItems = [
   { href: '/account', label: 'Profile', icon: User, auth: true },
 ];
 
-const scannerItem = { href: '/scanner', label: 'Scan', icon: ScanLine, auth: true, role: 'customer' };
+const scannerItem = { href: '/scanner', label: 'Scan', icon: ScanLine };
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -63,9 +64,10 @@ export function BottomNav() {
     return true;
   });
 
-  const showScanner = scannerItem.auth && user && user.user_metadata?.role === scannerItem.role && !loading;
+  const userRole = user?.user_metadata?.role;
+  const showScanner = !loading && (userRole === 'customer' || !user);
 
-  // Regular flex layout for guests or vendors
+  // Regular flex layout for vendors (or if loading)
   if (!showScanner) {
     return (
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/95 backdrop-blur-sm md:hidden">
@@ -78,7 +80,7 @@ export function BottomNav() {
     );
   }
 
-  // Special layout for customers with floating button
+  // Special layout for customers and guests with floating button
   const middleIndex = Math.ceil(itemsToDisplay.length / 2);
   const leftItems = itemsToDisplay.slice(0, middleIndex);
   const rightItems = itemsToDisplay.slice(middleIndex);

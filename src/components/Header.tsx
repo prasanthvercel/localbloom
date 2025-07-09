@@ -82,8 +82,12 @@ export function Header() {
       { href: '/', label: 'Home' },
       { href: '/marketplace', label: 'Categories', isDropdown: true },
     ];
-    if (userRole === 'customer') {
+    // Show scanner for guests and customers
+    if (!user || userRole === 'customer') {
       navItemsToDisplay.push({ href: '/scanner', label: 'Scanner' });
+    }
+    // Show calculator only for customers
+    if (userRole === 'customer') {
       navItemsToDisplay.push({ href: '/calculator', label: 'Calculator' });
     }
   }
