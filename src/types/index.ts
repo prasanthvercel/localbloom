@@ -1,4 +1,5 @@
 
+
 export type Product = {
   id: string;
   vendor_id: string;
@@ -66,4 +67,49 @@ export type Profile = {
     height: number | null; // in cm
     weight: number | null; // in kg
     wellness_goal: string | null;
+};
+
+export type NutritionLog = {
+    id: number;
+    user_id: string;
+    food_name: string;
+    meal_type: string; // 'Breakfast', 'Lunch', 'Dinner', 'Snack'
+    log_date: string; // YYYY-MM-DD
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    created_at: string;
+};
+
+export type Meal = {
+  name: string;
+  description: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+};
+
+export type DailyPlan = {
+  breakfast: Meal;
+  lunch: Meal;
+  dinner: Meal;
+  snack: Meal;
+  daily_totals: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+};
+
+export type WeeklyDietPlan = {
+  monday: DailyPlan;
+  tuesday: DailyPlan;
+  wednesday: DailyPlan;
+  thursday: DailyPlan;
+  friday: DailyPlan;
+  saturday: DailyPlan;
+  sunday: DailyPlan;
 };

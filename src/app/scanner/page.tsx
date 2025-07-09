@@ -4,12 +4,12 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Camera, ScanLine, Sparkles, Languages, HeartPulse } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Sparkles, Languages, HeartPulse, Apple } from 'lucide-react';
 import { analyzeProductImage, type AnalyzeProductImageOutput } from '@/ai/flows/analyze-product-image-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,13 +18,13 @@ import { createClient } from '@/lib/supabase/client';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { SubscriptionPromptDialog } from '@/components/scanner/SubscriptionPromptDialog';
 import { Separator } from '@/components/ui/separator';
+import { AddToDietDialog } from '@/components/scanner/AddToDietDialog';
 
 const FREE_SCAN_LIMIT = 3;
 
 export default function ScannerPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const supabase = createClient();
   
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -34,12 +34,16 @@ export default function ScannerPage() {
   const [remainingScans, setRemainingScans] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
   
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [cameraError, setCameraError] = useState<{ title: string; description: string } | null>(null);
   const [analysisResult, setAnalysisResult] = useState<AnalyzeProductImageOutput | null>(null);
   const [language, setLanguage] = useState('English');
+  
+  const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
+  const [showLogDialog, setShowLogDialog] = useState(false);
+  const [itemToLog, setItemToLog] = useState<{name: string, nutrition: AnalyzeProductImageOutput['nutrition']} | null>(null);
+
 
   useEffect(() => {
     const getCameraPermission = async () => {
@@ -132,6 +136,9 @@ export default function ScannerPage() {
       if (result.isFoodItem) {
         setRemainingScans(prev => Math.max(0, prev - 1));
         toast({ title: 'Analysis Complete!', description: `Identified: ${result.productName}.` });
+        if (result.nutrition) {
+            setItemToLog({ name: result.productName, nutrition: result.nutrition });
+        }
       } else {
          toast({ variant: 'destructive', title: 'Not a Food Item', description: 'The scanner is optimized for food items. Please try again.' });
       }
@@ -197,6 +204,12 @@ export default function ScannerPage() {
   return (
     <>
       <SubscriptionPromptDialog isOpen={showSubscriptionPrompt} setIsOpen={setShowSubscriptionPrompt} />
+      <AddToDietDialog
+        isOpen={showLogDialog}
+        setIsOpen={setShowLogDialog}
+        foodName={itemToLog?.name || ''}
+        nutrition={itemToLog?.nutrition || null}
+      />
       <div className="flex flex-col min-h-screen bg-secondary/30">
         <Header />
         <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -216,8 +229,23 @@ export default function ScannerPage() {
                           <CardTitle className="flex items-center gap-2"><Sparkles className="text-primary"/> Analysis Result</CardTitle>
                           <CardDescription>Product identified as: <span className="font-bold text-foreground">{analysisResult.productName}</span></CardDescription>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="space-y-4">
                         <p className="text-sm">{analysisResult.description}</p>
+                        
+                        {analysisResult.nutrition && (
+                            <Alert>
+                                <AlertTitle className="font-bold">Nutritional Information (per serving)</AlertTitle>
+                                <AlertDescription>
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                                        <span>Calories: {analysisResult.nutrition.calories.toFixed(0)} kcal</span>
+                                        <span>Protein: {analysisResult.nutrition.protein.toFixed(0)}g</span>
+                                        <span>Carbs: {analysisResult.nutrition.carbs.toFixed(0)}g</span>
+                                        <span>Fat: {analysisResult.nutrition.fat.toFixed(0)}g</span>
+                                    </div>
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
                         {analysisResult.personalizedAdvice && (
                             <Alert className="mt-4 border-primary/50 bg-primary/10">
                                 <HeartPulse className="h-4 w-4 text-primary" />
@@ -230,8 +258,15 @@ export default function ScannerPage() {
                       </CardContent>
                       
                        <Separator className="my-0" />
-                       <div className="px-6 py-4">
-                        <h3 className="mb-4 text-lg font-semibold leading-none tracking-tight">Price Comparison</h3>
+                       <div className="px-6 py-4 space-y-4">
+                         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                            <h3 className="text-lg font-semibold leading-none tracking-tight">Price Comparison</h3>
+                             {user?.user_metadata?.role === 'customer' && analysisResult.nutrition && (
+                                <Button variant="outline" size="sm" onClick={() => setShowLogDialog(true)}>
+                                    <Apple className="mr-2 h-4 w-4" /> Add to Diet Log
+                                </Button>
+                             )}
+                         </div>
                         {analysisResult.foundProducts.length > 0 ? (
                           <div className="space-y-3">
                             {analysisResult.foundProducts.map((product) => (

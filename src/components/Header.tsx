@@ -2,7 +2,7 @@
 "use client"
 
 import Link from 'next/link';
-import { LogOut, LogIn, UserPlus, User as UserIcon, ChevronDown, ScanLine } from 'lucide-react';
+import { LogOut, LogIn, UserPlus, User as UserIcon, ChevronDown, ScanLine, HeartPulse } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -72,11 +72,12 @@ export function Header() {
     if (href === '/') return pathname === '/';
     if (href.includes('/marketplace')) return pathname.startsWith('/marketplace') || pathname.startsWith('/products');
     if (href.includes('/scanner')) return pathname.startsWith('/scanner');
+    if (href.includes('/nutrition')) return pathname.startsWith('/nutrition');
     return pathname.startsWith(href);
   }
 
   const userRole = user?.user_metadata?.role;
-  let navItemsToDisplay: { href: string; label: string; isDropdown?: boolean }[] = [];
+  let navItemsToDisplay: { href: string; label: string; isDropdown?: boolean, icon?: React.ElementType }[] = [];
 
   if (userRole === 'vendor') {
     navItemsToDisplay = [
@@ -91,11 +92,11 @@ export function Header() {
       { href: '/marketplace', label: 'Categories', isDropdown: true },
     ];
     // Scanner link depends on auth state
-    navItemsToDisplay.push({ href: user ? '/scanner' : '/scanner/gate', label: 'Scanner' });
+    navItemsToDisplay.push({ href: user ? '/scanner' : '/scanner/gate', label: 'Scanner', icon: ScanLine });
     
-    // Show calculator only for customers
+    // Show nutrition only for customers
     if (userRole === 'customer') {
-      navItemsToDisplay.push({ href: '/calculator', label: 'Calculator' });
+      navItemsToDisplay.push({ href: '/nutrition', label: 'Nutrition', icon: HeartPulse });
     }
   }
   
@@ -138,11 +139,11 @@ export function Header() {
               );
             }
             
-            if (item.label === 'Scanner') {
+            if (item.icon) {
               return (
                 <Button key={item.href} asChild variant={getIsActive(item.href) ? 'default' : 'outline'} size="sm">
                   <Link href={item.href}>
-                    <ScanLine />
+                    <item.icon />
                     {item.label}
                   </Link>
                 </Button>
