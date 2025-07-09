@@ -37,7 +37,7 @@ export function DashboardPage({ user, shoppingListItems }: DashboardPageProps) {
   const featuredVendors = allVendors.slice(0, 3);
   
   const plugin = React.useRef(
-    Autoplay({ delay: 5000, stopOnInteraction: true })
+    Autoplay({ delay: 3000, stopOnInteraction: true })
   )
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
