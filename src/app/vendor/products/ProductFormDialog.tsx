@@ -14,15 +14,12 @@ import { Textarea } from '@/components/ui/textarea';
 import type { Product } from '@/data/vendors';
 import { saveProduct, type ProductFormData } from './actions';
 import Image from 'next/image';
-import { generateProductDescription } from '@/ai/flows/generate-product-description-flow';
-import { Sparkles } from 'lucide-react';
 
 interface ProductFormDialogProps {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
     product: Product | null;
     vendorId: string;
-    vendorCategory: string;
     onProductSaved: (product: Product) => void;
 }
 
@@ -37,10 +34,9 @@ const formSchema = z.object({
     colors: z.string().optional(),
 });
 
-export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, vendorCategory, onProductSaved }: ProductFormDialogProps) {
+export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProductSaved }: ProductFormDialogProps) {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
-    const [isGenerating, setIsGenerating] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -78,40 +74,6 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, vendor
             }
         }
     }, [product, form, isOpen]);
-
-    const handleGenerateDescription = async () => {
-        const productName = form.getValues('name');
-        if (!productName) {
-            toast({
-                title: 'Product Name Required',
-                description: 'Please enter a product name before generating a description.',
-                variant: 'destructive'
-            });
-            return;
-        }
-
-        setIsGenerating(true);
-        try {
-            const result = await generateProductDescription({
-                productName,
-                category: vendorCategory,
-            });
-            form.setValue('description', result.description, { shouldValidate: true });
-            toast({
-                title: 'Description Generated!',
-                description: 'The AI has created a description for your product.',
-            });
-        } catch (error) {
-            console.error('Error generating description:', error);
-            toast({
-                title: 'Generation Failed',
-                description: 'Could not generate a description at this time.',
-                variant: 'destructive',
-            });
-        } finally {
-            setIsGenerating(false);
-        }
-    };
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         setIsLoading(true);
@@ -162,22 +124,9 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, vendor
                                 <FormField control={form.control} name="description" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Description</FormLabel>
-                                        <div className="relative">
-                                            <FormControl>
-                                                <Textarea placeholder="Describe your product, its features, and what makes it special..." {...field} rows={5} />
-                                            </FormControl>
-                                            <Button 
-                                                type="button" 
-                                                variant="outline" 
-                                                size="sm" 
-                                                className="absolute bottom-2 right-2"
-                                                onClick={handleGenerateDescription}
-                                                disabled={isGenerating}
-                                            >
-                                                <Sparkles className="mr-2 h-4 w-4" />
-                                                {isGenerating ? 'Generating...' : 'AI Generate'}
-                                            </Button>
-                                        </div>
+                                        <FormControl>
+                                            <Textarea placeholder="Describe your product, its features, and what makes it special..." {...field} rows={5} />
+                                        </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>

@@ -19,7 +19,7 @@ export default async function VendorProductsPage() {
   // First, get the vendor's ID
   const { data: vendor, error: vendorError } = await supabase
     .from('vendors')
-    .select('id, category')
+    .select('id')
     .eq('user_id', user.id)
     .single();
 
@@ -47,7 +47,6 @@ export default async function VendorProductsPage() {
          <ProductListClient 
             initialProducts={products || []} 
             vendorId={vendor.id} 
-            vendorCategory={vendor.category || ''}
          />
       </main>
     </div>
