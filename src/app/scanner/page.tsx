@@ -85,14 +85,14 @@ export default function ScannerPage() {
       
       await getCameraPermission();
         
-      const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single();
+      const { data: profile } = await supabase.from('profiles').select('subscription_tier, scan_count, last_scan_date').eq('id', user.id).single();
       
       const isSubscribed = profile?.subscription_tier && profile.subscription_tier !== 'free';
 
       if (isSubscribed) {
         setRemainingScans(Infinity); // Subscribed users have unlimited scans
       } else {
-        // Set to 0 to force subscription prompt for testing purposes.
+        // FOR TESTING: Set to 0 to force subscription prompt.
         setRemainingScans(0);
       }
       setIsInitializing(false);
