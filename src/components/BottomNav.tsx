@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calculator, Home, User, LayoutGrid } from 'lucide-react';
+import { Calculator, Home, User, LayoutGrid, ScanLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -11,6 +11,7 @@ import type { User as SupabaseUser } from '@supabase/supabase-js';
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/marketplace', label: 'Categories', icon: LayoutGrid },
+  { href: '/scanner', label: 'Scan', icon: ScanLine, auth: true, role: 'customer' },
   { href: '/calculator', label: 'Calculator', icon: Calculator, auth: true, role: 'customer' },
   { href: '/account', label: 'Profile', icon: User, auth: true },
 ];
@@ -45,9 +46,16 @@ export function BottomNav() {
     return true;
   });
 
+  const numItems = itemsToDisplay.length;
+  const gridColsClass = `grid-cols-${numItems}`;
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/95 backdrop-blur-sm md:hidden">
-      <div className="container grid h-16 w-full grid-cols-4 items-center px-4">
+      <div className={cn("container grid h-16 w-full items-center px-4", 
+        numItems === 5 && 'grid-cols-5',
+        numItems === 4 && 'grid-cols-4',
+        numItems === 3 && 'grid-cols-3'
+      )}>
         {itemsToDisplay.map((item) => (
           <Link
             key={item.href}
