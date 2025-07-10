@@ -215,19 +215,17 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
             <DialogHeader>
                 <DialogTitle>Crop your image</DialogTitle>
             </DialogHeader>
-            <div className="mt-4">
-                {cropperImgSrc && (
-                    <ReactCrop
-                    crop={crop}
-                    onChange={(_, percentCrop) => setCrop(percentCrop)}
-                    onComplete={(c) => setCompletedCrop(c)}
-                    aspect={aspectRatio}
-                    minWidth={100}
-                    >
-                    <img ref={imgRef} src={cropperImgSrc} alt="Crop preview" onLoad={onImageLoad} className="w-full" />
-                    </ReactCrop>
-                )}
-            </div>
+            {cropperImgSrc && (
+                <ReactCrop
+                crop={crop}
+                onChange={(_, percentCrop) => setCrop(percentCrop)}
+                onComplete={(c) => setCompletedCrop(c)}
+                aspect={aspectRatio}
+                minWidth={100}
+                >
+                <img ref={imgRef} src={cropperImgSrc} alt="Crop preview" onLoad={onImageLoad} className="w-full" />
+                </ReactCrop>
+            )}
             <DialogFooter className="mt-4">
                 <Button variant="outline" onClick={() => setIsCropperOpen(false)}>Cancel</Button>
                 <Button onClick={handleCropConfirm}>Confirm Crop</Button>
