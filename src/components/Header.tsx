@@ -2,7 +2,7 @@
 "use client"
 
 import Link from 'next/link';
-import { LogOut, LogIn, UserPlus, User as UserIcon, ChevronDown, Camera, Settings, Building, Package } from 'lucide-react';
+import { LogOut, User as UserIcon, ChevronDown, Camera, Settings, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -17,7 +17,7 @@ import type { Profile } from '@/types';
 
 export function Header() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [profile, setProfile] = useState<Partial<Profile> | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<string[]>([]);
   const supabase = createClient();
@@ -27,14 +27,14 @@ export function Header() {
   useEffect(() => {
     const fetchUserAndProfile = async () => {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      setUser(currentUser);
       
-      if (user) {
+      if (currentUser) {
         const { data: profileData, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', currentUser.id)
           .single();
           
         if (error && error.code !== 'PGRST116') {
@@ -50,7 +50,7 @@ export function Header() {
     fetchUserAndProfile();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const currentUser = session?.user;
+      const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
         const { data: profileData, error } = await supabase
@@ -90,6 +90,7 @@ export function Header() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    router.push('/');
   };
   
   const getInitials = (fullName?: string | null, email?: string | null) => {
@@ -116,7 +117,7 @@ export function Header() {
     return pathname.startsWith(href);
   }
 
-  const userRole = profile?.role || user?.user_metadata?.role;
+  const userRole = profile?.role;
   const isSubscribed = profile?.subscription_tier && profile.subscription_tier !== 'free';
   let navItemsToDisplay: { href: string; label: string; isDropdown?: boolean, icon?: React.ElementType }[] = [];
 
@@ -216,7 +217,7 @@ export function Header() {
             <>
               <Button asChild variant="ghost" className="px-2 md:px-3">
                 <Link href="/account">
-                  <Settings className="md:mr-2" />
+                  <UserIcon className="md:mr-2" />
                   <span className="hidden md:inline">Account</span>
                   <span className="sr-only">Account</span>
                 </Link>
@@ -225,7 +226,7 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
-                       <AvatarImage src={profile?.avatar_url || user.user_metadata?.avatar_url} alt={profile?.full_name || user.email!} />
+                       <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || user.email!} />
                       <AvatarFallback>{getInitials(profile?.full_name, user.email)}</AvatarFallback>
                     </Avatar>
                   </Button>
@@ -248,34 +249,14 @@ export function Header() {
               </DropdownMenu>
             </>
           ) : (
-            <div className="flex items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline">Login</Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link href="/login" className='cursor-pointer'><LogIn className="mr-2 h-4 w-4" />Customer Login</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/vendor/login" className='cursor-pointer'><LogIn className="mr-2 h-4 w-4" />Vendor Login</Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button>Sign Up</Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link href="/register" className='cursor-pointer'><UserPlus className="mr-2 h-4 w-4" />Customer Sign Up</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/vendor/register" className='cursor-pointer'><UserPlus className="mr-2 h-4 w-4" />Vendor Sign Up</Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
+            <>
+              <Button asChild>
+                <Link href="/login">Login</Link>
+              </Button>
+              <Button asChild variant="secondary">
+                <Link href="/register">Sign Up</Link>
+              </Button>
+            </>
           )}
         </div>
       </div>
