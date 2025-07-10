@@ -23,6 +23,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'mycf.in',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };
