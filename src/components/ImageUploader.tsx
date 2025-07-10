@@ -39,7 +39,7 @@ export function ImageUploader({ value, onChange, className }: ImageUploaderProps
         const options = {
           maxSizeMB: 1, // Max file size 1MB
           maxWidthOrHeight: 1024, // Max width/height 1024px
-          useWebWorker: true,
+          useWebWorker: false, // Disabling web worker to fix bug
         };
         console.log('Original image size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
         const compressedFile = await imageCompression(file, options);
