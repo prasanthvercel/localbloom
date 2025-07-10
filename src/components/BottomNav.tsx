@@ -2,8 +2,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { Calculator, Home, LayoutGrid, HeartPulse, Camera, User as UserIcon, Building } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Calculator, Home, LayoutGrid, HeartPulse, Camera, User as UserIcon, Building, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -32,14 +32,14 @@ const baseNavItems = [
   { href: '/marketplace', label: 'Categories', icon: LayoutGrid },
   { href: '/calculator', label: 'Expenses', icon: Calculator, auth: true, role: 'customer' },
   { href: '/nutrition', label: 'Nutrition', icon: HeartPulse, auth: true, role: 'customer' },
-  { href: '/account', label: 'Profile', icon: UserIcon, auth: true, role: 'customer' },
+  { href: '/account', label: 'Profile', icon: UserIcon, auth: true },
 ];
 
 const vendorNavItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/vendor/products', label: 'Products', icon: LayoutGrid },
   { href: '/vendor/shop', label: 'Shop', icon: Building, auth: true, role: 'vendor' },
-  { href: '/account', label: 'Profile', icon: UserIcon, auth: true, role: 'vendor' },
+  { href: '/account', label: 'Profile', icon: Settings, auth: true },
 ];
 
 const scannerItem = { href: '/scanner', label: 'Scan', icon: Camera };
@@ -47,14 +47,14 @@ const scannerGateItem = { href: '/scanner/gate', label: 'Scan', icon: Camera };
 
 export function BottomNav() {
   const pathname = usePathname();
-  const router = useRouter();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<Partial<Profile> | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndProfile = async () => {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
       if (user) {
@@ -64,11 +64,13 @@ export function BottomNav() {
           .eq('id', user.id)
           .single();
         setProfile(profileData);
+      } else {
+        setProfile(null);
       }
       setLoading(false);
     };
 
-    fetchUser();
+    fetchUserAndProfile();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const currentUser = session?.user ?? null;
@@ -98,6 +100,7 @@ export function BottomNav() {
     if (href.includes('nutrition')) return pathname.startsWith('/nutrition');
     if (href.includes('calculator')) return pathname.startsWith('/calculator');
     if (href.includes('account')) return pathname.startsWith('/account');
+    if (href.includes('vendor')) return pathname.startsWith('/vendor');
     return pathname.startsWith(href);
   }
 

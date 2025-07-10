@@ -2,7 +2,7 @@
 "use client"
 
 import Link from 'next/link';
-import { LogOut, LogIn, UserPlus, User as UserIcon, ChevronDown, Camera, Calculator } from 'lucide-react';
+import { LogOut, LogIn, UserPlus, User as UserIcon, ChevronDown, Camera, Settings, Building, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -24,18 +24,17 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
 
- useEffect(() => {
-    // This effect handles authentication state and fetching associated profile data.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const currentUser = session?.user;
-      setUser(currentUser);
+  useEffect(() => {
+    const fetchUserAndProfile = async () => {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
       
-      if (currentUser) {
-        // If a user is logged in, fetch their complete profile.
+      if (user) {
         const { data: profileData, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', currentUser.id)
+          .eq('id', user.id)
           .single();
           
         if (error && error.code !== 'PGRST116') {
@@ -43,24 +42,35 @@ export function Header() {
         }
         setProfile(profileData);
       } else {
-        // If no user, clear the profile.
         setProfile(null);
       }
       setLoading(false);
+    };
 
-      if (event === 'SIGNED_IN') {
-        const redirectPath = new URLSearchParams(window.location.search).get('redirect');
-        if (redirectPath) {
-          router.push(redirectPath);
-        } else {
-          router.refresh();
+    fetchUserAndProfile();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const currentUser = session?.user;
+      setUser(currentUser);
+      if (currentUser) {
+        const { data: profileData, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', currentUser.id)
+          .single();
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching profile on auth change:', error);
         }
-      } else if (event === 'SIGNED_OUT') {
+        setProfile(profileData);
+      } else {
+        setProfile(null);
+      }
+      setLoading(false);
+      if (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED' || _event === 'SIGNED_OUT') {
         router.refresh();
       }
     });
 
-    // This effect fetches static data like categories just once on mount.
     const fetchCategories = async () => {
       const { data: categoriesData, error } = await supabase.from('vendors').select('category');
       if (error) {
@@ -106,7 +116,6 @@ export function Header() {
     return pathname.startsWith(href);
   }
 
-  // Prefer profile data, but fall back to user metadata for role.
   const userRole = profile?.role || user?.user_metadata?.role;
   const isSubscribed = profile?.subscription_tier && profile.subscription_tier !== 'free';
   let navItemsToDisplay: { href: string; label: string; isDropdown?: boolean, icon?: React.ElementType }[] = [];
@@ -207,7 +216,7 @@ export function Header() {
             <>
               <Button asChild variant="ghost" className="px-2 md:px-3">
                 <Link href="/account">
-                  <UserIcon className="md:mr-2" />
+                  <Settings className="md:mr-2" />
                   <span className="hidden md:inline">Account</span>
                   <span className="sr-only">Account</span>
                 </Link>
