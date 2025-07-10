@@ -3,11 +3,9 @@ import { redirect } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { ExpenseTracker } from '@/components/calculator/ExpenseTracker';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
-import { cookies } from 'next/headers';
 
 export default async function CalculatorPage() {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
 

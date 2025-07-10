@@ -3,7 +3,6 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
 import { z } from 'zod';
 
 const LogItemSchema = z.object({
@@ -19,8 +18,7 @@ const LogItemSchema = z.object({
 export type LogItemData = z.infer<typeof LogItemSchema>;
 
 export async function logConsumedItem(itemData: LogItemData) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -51,8 +49,7 @@ const WellnessProfileSchema = z.object({
 export type WellnessProfileData = z.infer<typeof WellnessProfileSchema>;
 
 export async function updateWellnessProfile(data: WellnessProfileData) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

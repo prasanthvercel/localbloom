@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { ProductResults } from '@/components/products/ProductResults';
 import type { ProductWithVendor, ShoppingListItem } from '@/types';
@@ -56,8 +55,7 @@ export default async function ProductsPage({
 }: {
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const category = typeof searchParams.category === 'string' ? searchParams.category : undefined;

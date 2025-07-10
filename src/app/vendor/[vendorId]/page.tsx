@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Header } from '@/components/Header';
 import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
 import type { Vendor, Product } from '@/types';
 import { createServerClient } from '@supabase/ssr';
 
@@ -30,8 +29,7 @@ export async function generateStaticParams() {
 }
 
 async function getVendor(vendorId: string): Promise<Vendor | null> {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   const { data: vendor, error } = await supabase
     .from('vendors')
     .select('*, products(*)')
@@ -68,6 +66,7 @@ export default async function VendorPage({ params }: { params: { vendorId: strin
               src={vendor.image || 'https://placehold.co/400x250.png'}
               alt={vendor.name || 'Vendor'}
               fill
+              sizes="100vw"
               className="object-cover"
               data-ai-hint={`${vendor.category} market vendor`}
               priority

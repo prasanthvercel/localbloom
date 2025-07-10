@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Leaf, Cake, Paintbrush, Utensils, Shirt, ArrowLeft } from 'lucide-react';
 import type { ElementType } from 'react';
 import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
 
 const categoryIcons: { [key: string]: ElementType } = {
   Produce: Leaf,
@@ -15,8 +14,7 @@ const categoryIcons: { [key: string]: ElementType } = {
 };
 
 export default async function MarketplacePage() {
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = createClient();
 
     const { data: vendors, error } = await supabase.from('vendors').select('category');
     const categories = [...new Set(vendors?.map(vendor => vendor.category).filter(Boolean) as string[])];

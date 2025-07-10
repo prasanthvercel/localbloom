@@ -2,12 +2,10 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
 import { format } from 'date-fns';
 
 export async function addItemToShoppingList(formData: FormData) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return { success: false, error: 'You must be logged in.' };
@@ -73,8 +71,7 @@ export async function addItemToShoppingList(formData: FormData) {
 }
 
 export async function toggleItemBoughtStatus(itemId: number, bought: boolean) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return { success: false, error: 'You must be logged in.' };
@@ -96,8 +93,7 @@ export async function toggleItemBoughtStatus(itemId: number, bought: boolean) {
 
 
 export async function moveItemsToExpenses(itemIds: number[]) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return { success: false, error: 'You must be logged in.' };
@@ -156,8 +152,7 @@ export async function moveItemsToExpenses(itemIds: number[]) {
 }
 
 export async function deleteShoppingListItem(itemId: number) {
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) return { success: false, error: 'You must be logged in.' };

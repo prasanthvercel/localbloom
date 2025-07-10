@@ -3,7 +3,6 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
 import { z } from 'zod';
 
 const productActionSchema = z.object({
@@ -19,8 +18,7 @@ const productActionSchema = z.object({
 });
 
 export async function saveProduct(formData: FormData) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Unauthorized' };
@@ -92,8 +90,7 @@ export async function saveProduct(formData: FormData) {
 
 
 export async function deleteProduct(productId: string) {
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = createClient();
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Unauthorized' };

@@ -3,12 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { ShopForm } from './ShopForm';
-import { cookies } from 'next/headers';
 import type { Vendor } from '@/types';
 
 export default async function ShopSettingsPage() {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
 

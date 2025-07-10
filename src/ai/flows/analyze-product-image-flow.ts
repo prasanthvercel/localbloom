@@ -11,7 +11,6 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
 
 const AnalyzeProductImageInputSchema = z.object({
   photoDataUri: z
@@ -112,8 +111,7 @@ const analyzeProductImageFlow = ai.defineFlow(
     outputSchema: AnalyzeProductImageOutputSchema,
   },
   async (input) => {
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = createClient();
     
     let profile: { scan_count: number | null, last_scan_date: string | null, height: number | null, weight: number | null, wellness_goal: string | null, health_conditions: string | null } | null = null;
 

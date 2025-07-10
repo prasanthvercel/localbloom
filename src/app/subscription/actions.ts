@@ -4,7 +4,6 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
 const keyId = "rzp_test_jvsIRxawUh4gGu";
@@ -25,8 +24,7 @@ type CreateOrderParams = {
 };
 
 export async function createRazorpayOrder({ amountInPaise, plan }: CreateOrderParams) {
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -65,8 +63,7 @@ type VerifyPaymentParams = {
 };
 
 export async function verifyPaymentAndUpdateProfile({ orderId, paymentId, signature, plan }: VerifyPaymentParams) {
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
