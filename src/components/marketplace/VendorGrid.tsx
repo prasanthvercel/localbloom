@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { VendorCard } from '@/components/VendorCard';
-import type { Vendor } from '@/data/vendors';
+import type { Vendor } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 

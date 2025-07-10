@@ -1,16 +1,26 @@
+
 "use client"
 
 import React from 'react';
 import { MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import type { Vendor } from '@/data/vendors';
+import type { Vendor } from '@/types';
 
 interface MapPlaceholderProps {
   vendors: Vendor[];
 }
 
 export function MapPlaceholder({ vendors }: MapPlaceholderProps) {
+  // A simple pseudo-random but deterministic way to place pins
+  const getPosition = (id: string, coord: 'lat' | 'lng') => {
+    const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    if (coord === 'lat') {
+      return 15 + (hash % 70);
+    }
+    return 15 + ((hash * 3) % 70);
+  };
+
   return (
     <Card className="overflow-hidden">
       <CardHeader>
@@ -30,7 +40,7 @@ export function MapPlaceholder({ vendors }: MapPlaceholderProps) {
                 <TooltipTrigger asChild>
                   <div
                     className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-transform hover:scale-125"
-                    style={{ top: `${vendor.location.lat}%`, left: `${vendor.location.lng}%` }}
+                    style={{ top: `${getPosition(vendor.id, 'lat')}%`, left: `${getPosition(vendor.id, 'lng')}%` }}
                   >
                     <MapPin className="h-6 w-6 text-primary fill-primary/30" />
                   </div>
