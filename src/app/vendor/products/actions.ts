@@ -27,7 +27,7 @@ export async function saveProduct(formData: FormData) {
   }
 
   // First, verify ownership and get the vendor ID associated with this user.
-  // This is the most important security check.
+  // This is the most important security check and the root of the previous issues.
   const { data: vendorData, error: vendorError } = await supabase
     .from('vendors')
     .select('id')
@@ -36,7 +36,7 @@ export async function saveProduct(formData: FormData) {
 
   if (vendorError || !vendorData) {
       console.error('Vendor not found for user:', user.id, vendorError);
-      return { success: false, error: 'Could not find your vendor profile. Please set up your shop first.' };
+      return { success: false, error: 'Could not find your vendor profile. Please ensure your shop is set up before adding products.' };
   }
   const verifiedVendorId = vendorData.id;
 
@@ -64,6 +64,7 @@ export async function saveProduct(formData: FormData) {
   let imageUrl = existingImageUrl;
 
   if (imageFile && imageFile.size > 0) {
+      // The file path must use the user's ID as the root folder, as per RLS policy.
       const filePath = `${user.id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
       const { error: uploadError } = await supabase.storage
           .from('product-images')
@@ -77,9 +78,11 @@ export async function saveProduct(formData: FormData) {
       const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(filePath);
       imageUrl = publicUrl;
 
+      // If updating, delete the old image
       if (existingImageUrl) {
         try {
             const url = new URL(existingImageUrl);
+            // Extract path from Supabase URL: /storage/v1/object/public/product-images/[path]
             const oldPath = url.pathname.split('/product-images/')[1];
             if(oldPath) {
               await supabase.storage.from('product-images').remove([oldPath]);
@@ -108,6 +111,16 @@ export async function saveProduct(formData: FormData) {
 
   if (error) {
     console.error('Error saving product:', error);
+    // If there is an image URL from a new upload, try to delete it on failure to prevent orphaned files.
+    if (imageUrl && imageUrl !== existingImageUrl) {
+        try {
+            const url = new URL(imageUrl);
+            const pathToDelete = url.pathname.split('/product-images/')[1];
+            if (pathToDelete) await supabase.storage.from('product-images').remove([pathToDelete]);
+        } catch (e) {
+            console.error("Failed to clean up orphaned image after DB error", e);
+        }
+    }
     return { success: false, error: `Could not save product: ${error.message}` };
   }
 
