@@ -9,10 +9,22 @@ import { Header } from '@/components/Header';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import type { Vendor, Product } from '@/types';
+import { createServerClient } from '@supabase/ssr';
 
 export async function generateStaticParams() {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+    // Create a Supabase client that doesn't rely on cookies
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+        cookies: {
+            // Return null for all cookie methods
+            get: async () => null,
+            set: async () => {},
+            remove: async () => {},
+        },
+        }
+    );
   const { data: vendors } = await supabase.from('vendors').select('id');
   return vendors?.map(vendor => ({ vendorId: vendor.id })) || [];
 }

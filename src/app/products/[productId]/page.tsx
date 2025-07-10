@@ -9,6 +9,7 @@ import { cookies } from 'next/headers';
 import { Card, CardContent } from '@/components/ui/card';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import type { Product, Vendor, ProductWithVendor } from '@/types';
+import { createServerClient } from '@supabase/ssr';
 
 async function getProductDetails(productId: string) {
   const cookieStore = cookies();
@@ -73,8 +74,19 @@ async function getRelatedProducts(currentProduct: Product, currentVendor: Vendor
 }
 
 export async function generateStaticParams() {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  // Create a Supabase client that doesn't rely on cookies
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        // Return null for all cookie methods
+        get: async () => null,
+        set: async () => {},
+        remove: async () => {},
+      },
+    }
+  );
   const { data: products } = await supabase.from('products').select('id');
   return products?.map(({ id }) => ({ productId: id })) || [];
 }
