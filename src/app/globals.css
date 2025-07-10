@@ -87,3 +87,8 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom style for react-image-crop */
+.ReactCrop__crop-selection {
+  border: 2px dashed rgba(255, 255, 255, 0.7);
+}
