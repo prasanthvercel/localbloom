@@ -9,6 +9,7 @@ import { cookies } from 'next/headers';
 const productActionSchema = z.object({
     id: z.string().uuid().optional().nullable(),
     vendor_id: z.string().uuid(),
+    user_id: z.string().uuid(), // Add user_id for RLS check
     name: z.string().min(3, 'Name must be at least 3 characters'),
     price: z.coerce.number().positive('Price must be a positive number'),
     unit: z.string().optional().nullable(),
@@ -23,11 +24,14 @@ export async function saveProduct(formData: FormData) {
   const supabase = createClient(cookieStore);
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Unauthorized' };
+  if (!user) {
+    return { success: false, error: 'Unauthorized: You must be logged in to save a product.' };
+  }
 
   const rawData = {
       id: formData.get('id'),
       vendor_id: formData.get('vendor_id'),
+      user_id: formData.get('user_id'),
       name: formData.get('name'),
       price: formData.get('price'),
       unit: formData.get('unit'),
@@ -41,30 +45,21 @@ export async function saveProduct(formData: FormData) {
   if (!validation.success) {
     return { success: false, error: JSON.stringify(validation.error.flatten().fieldErrors) };
   }
-  
-  const { id, vendor_id, sizes, colors, ...productData } = validation.data;
 
-  // RLS Check: Verify the user owns the vendor they are trying to save to.
-  const { data: vendorData, error: vendorError } = await supabase
-    .from('vendors')
-    .select('user_id')
-    .eq('id', vendor_id)
-    .single();
-
-  if (vendorError || !vendorData) {
-    return { success: false, error: 'Vendor not found.' };
-  }
-  if (vendorData.user_id !== user.id) {
-    return { success: false, error: 'You do not have permission to modify this shop.' };
+  // RLS Check: Verify the user ID from the form matches the logged-in user.
+  if (validation.data.user_id !== user.id) {
+    return { success: false, error: 'Authorization error: You cannot save products for another vendor.' };
   }
   
+  const { id, vendor_id, user_id, sizes, colors, ...productData } = validation.data;
+
   const imageFile = formData.get('image') as File | null;
   const existingImageUrl = formData.get('existingImageUrl') as string | null;
   let imageUrl = existingImageUrl;
 
   if (imageFile && imageFile.size > 0) {
       // Use user.id for the folder path to match RLS policy
-      const filePath = `${user.id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
+      const filePath = `${user_id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
       const { error: uploadError } = await supabase.storage
           .from('product-images')
           .upload(filePath, imageFile);
@@ -76,6 +71,19 @@ export async function saveProduct(formData: FormData) {
 
       const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(filePath);
       imageUrl = publicUrl;
+
+      // If there was an old image and we're uploading a new one, delete the old one.
+      if (existingImageUrl) {
+        try {
+            const url = new URL(existingImageUrl);
+            const path = url.pathname.split('/product-images/')[1];
+            if(path && path.startsWith(user_id)) {
+              await supabase.storage.from('product-images').remove([path]);
+            }
+        } catch (e) {
+            console.error("Could not parse or delete old product image", e);
+        }
+      }
   }
 
   const dataToUpsert = {

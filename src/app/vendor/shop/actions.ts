@@ -38,7 +38,6 @@ export async function updateShopDetails(formData: FormData) {
   let imageUrl = existingImageUrl;
 
   if (imageFile && imageFile.size > 0) {
-      // Use user.id for the folder path to match RLS policy
       const filePath = `${user.id}/banner-${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
       const { error: uploadError } = await supabase.storage
           .from('shop-images')
@@ -51,6 +50,19 @@ export async function updateShopDetails(formData: FormData) {
       
       const { data: { publicUrl } } = supabase.storage.from('shop-images').getPublicUrl(filePath);
       imageUrl = publicUrl;
+
+      // If there was an old image and we're uploading a new one, delete the old one.
+      if (existingImageUrl) {
+        try {
+            const url = new URL(existingImageUrl);
+            const path = url.pathname.split('/shop-images/')[1];
+            if(path && path.startsWith(user.id)) {
+                await supabase.storage.from('shop-images').remove([path]);
+            }
+        } catch (e) {
+            console.error("Could not parse or delete old shop image", e);
+        }
+      }
   }
   
   const vendorData = {
