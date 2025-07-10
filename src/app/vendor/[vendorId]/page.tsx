@@ -9,6 +9,7 @@ import { Header } from '@/components/Header';
 import { createClient } from '@/lib/supabase/server';
 import type { Vendor, Product } from '@/types';
 import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export async function generateStaticParams() {
     // Create a Supabase client that doesn't rely on cookies
@@ -29,7 +30,8 @@ export async function generateStaticParams() {
 }
 
 async function getVendor(vendorId: string): Promise<Vendor | null> {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const { data: vendor, error } = await supabase
     .from('vendors')
     .select('*, products(*)')

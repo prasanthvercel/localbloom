@@ -3,9 +3,11 @@ import { createClient } from '@/lib/supabase/server';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { VendorDashboardPage } from '@/components/vendor/VendorDashboardPage';
 import type { ShoppingListItem, Vendor } from '@/types';
+import { cookies } from 'next/headers';
 
 export default async function Home() {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
   if (user && user.user_metadata?.role === 'vendor') {

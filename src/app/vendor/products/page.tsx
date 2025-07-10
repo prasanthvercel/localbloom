@@ -1,12 +1,13 @@
-
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Header } from '@/components/Header';
 import type { Product } from '@/types';
 import { ProductListClient } from './ProductListClient';
+import { cookies } from 'next/headers';
 
 export default async function VendorProductsPage() {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
 
   const { data: { user } } = await supabase.auth.getUser();
 

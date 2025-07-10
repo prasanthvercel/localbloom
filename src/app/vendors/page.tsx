@@ -4,9 +4,11 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import type { Vendor } from '@/types';
+import { cookies } from 'next/headers';
 
 export default async function VendorsPage() {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     const { data: vendors, error } = await supabase.from('vendors').select('*');
 
     return (

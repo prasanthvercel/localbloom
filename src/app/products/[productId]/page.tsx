@@ -9,9 +9,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import type { Product, Vendor, ProductWithVendor } from '@/types';
 import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 async function getProductDetails(productId: string) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   
   const { data: productData, error } = await supabase
     .from('products')
@@ -41,7 +43,8 @@ async function getProductDetails(productId: string) {
 async function getRelatedProducts(currentProduct: Product, currentVendor: Vendor) {
   if (!currentVendor?.category) return [];
 
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   
   // Find other vendors in the same category
   const { data: vendorsInCategory, error: vendorError } = await supabase
@@ -98,7 +101,8 @@ export default async function ProductDetailPage({ params }: { params: { productI
   const { product, vendor } = details;
   const relatedProducts = await getRelatedProducts(product, vendor);
 
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
   return (

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 
 type UpdateExpenseResult = {
   success: boolean;
@@ -14,7 +15,8 @@ export async function updateExpense(
   itemName: string,
   amount: number
 ): Promise<UpdateExpenseResult> {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

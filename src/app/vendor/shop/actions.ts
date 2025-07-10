@@ -1,9 +1,9 @@
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { cookies } from 'next/headers';
 
 const shopActionSchema = z.object({
   name: z.string().min(3, 'Shop name must be at least 3 characters.'),
@@ -12,7 +12,8 @@ const shopActionSchema = z.object({
 });
 
 export async function updateShopDetails(formData: FormData) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
