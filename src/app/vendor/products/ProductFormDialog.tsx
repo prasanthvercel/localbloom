@@ -148,9 +148,14 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, onProductSaved }
                                     <FormItem>
                                         <FormLabel>Product Image</FormLabel>
                                         <FormControl>
-                                            <ImageUploader value={field.value} onChange={field.onChange} />
+                                            <ImageUploader 
+                                                value={field.value} 
+                                                onChange={field.onChange}
+                                                className="aspect-square"
+                                                aspectRatio={1}
+                                            />
                                         </FormControl>
-                                        <FormDescription>Click or drag-and-drop an image here.</FormDescription>
+                                        <FormDescription>Recommended: 1:1 (Square). Click image to crop.</FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
