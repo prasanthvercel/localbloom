@@ -9,7 +9,7 @@ import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import imageCompression from 'browser-image-compression';
 import ReactCrop, { type Crop as CropType, centerCrop, makeAspectCrop } from 'react-image-crop';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 
 
 interface ImageUploaderProps {
@@ -159,8 +159,10 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
 
   useEffect(() => {
     // When the dialog is closed, revoke the object URL to prevent memory leaks
-    if (!isCropperOpen && cropperImgSrc) {
-      URL.revokeObjectURL(cropperImgSrc);
+    if (!isCropperOpen) {
+      if (cropperImgSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(cropperImgSrc);
+      }
       setCropperImgSrc('');
     }
   }, [isCropperOpen, cropperImgSrc]);
@@ -209,6 +211,9 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
         <DialogContent className="max-w-md">
             <DialogHeader>
                 <DialogTitle>Crop your image</DialogTitle>
+                <DialogDescription>
+                    Adjust the selection to crop the image. Click "Confirm Crop" to save.
+                </DialogDescription>
             </DialogHeader>
             {cropperImgSrc && (
                 <ReactCrop
