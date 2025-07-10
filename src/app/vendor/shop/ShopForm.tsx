@@ -82,8 +82,7 @@ export function ShopForm({ user, vendor }: ShopFormProps) {
         title: 'Shop Updated',
         description: 'Your shop details have been saved successfully.',
       });
-      router.push('/vendor/products');
-      router.refresh();
+      router.refresh(); // Refresh the current page to show new data
     } else {
       toast({
         title: 'Update Failed',
