@@ -14,11 +14,9 @@ import type { Product } from '@/types';
 
 interface ProductListClientProps {
   initialProducts: Product[];
-  vendorId: string;
-  userId: string;
 }
 
-export function ProductListClient({ initialProducts, vendorId, userId }: ProductListClientProps) {
+export function ProductListClient({ initialProducts }: ProductListClientProps) {
     const [products, setProducts] = useState(initialProducts);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -130,8 +128,6 @@ export function ProductListClient({ initialProducts, vendorId, userId }: Product
                 isOpen={isFormOpen}
                 setIsOpen={setIsFormOpen}
                 product={selectedProduct}
-                vendorId={vendorId}
-                userId={userId}
                 onProductSaved={onProductSaved}
             />
 

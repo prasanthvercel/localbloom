@@ -8,8 +8,6 @@ import { cookies } from 'next/headers';
 
 const productActionSchema = z.object({
     id: z.string().uuid().optional().nullable(),
-    vendor_id: z.string().uuid(),
-    user_id: z.string().uuid(), // Add user_id for RLS check
     name: z.string().min(3, 'Name must be at least 3 characters'),
     price: z.coerce.number().positive('Price must be a positive number'),
     unit: z.string().optional().nullable(),
@@ -28,10 +26,23 @@ export async function saveProduct(formData: FormData) {
     return { success: false, error: 'Unauthorized: You must be logged in to save a product.' };
   }
 
+  // First, verify ownership and get the vendor ID associated with this user.
+  // This is the most important security check.
+  const { data: vendorData, error: vendorError } = await supabase
+    .from('vendors')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (vendorError || !vendorData) {
+      console.error('Vendor not found for user:', user.id, vendorError);
+      return { success: false, error: 'Could not find your vendor profile. Please set up your shop first.' };
+  }
+  const verifiedVendorId = vendorData.id;
+
+
   const rawData = {
       id: formData.get('id'),
-      vendor_id: formData.get('vendor_id'),
-      user_id: formData.get('user_id'),
       name: formData.get('name'),
       price: formData.get('price'),
       unit: formData.get('unit'),
@@ -45,21 +56,15 @@ export async function saveProduct(formData: FormData) {
   if (!validation.success) {
     return { success: false, error: JSON.stringify(validation.error.flatten().fieldErrors) };
   }
-
-  // RLS Check: Verify the user ID from the form matches the logged-in user.
-  if (validation.data.user_id !== user.id) {
-    return { success: false, error: 'Authorization error: You cannot save products for another vendor.' };
-  }
   
-  const { id, vendor_id, user_id, sizes, colors, ...productData } = validation.data;
+  const { id, ...productData } = validation.data;
 
   const imageFile = formData.get('image') as File | null;
   const existingImageUrl = formData.get('existingImageUrl') as string | null;
   let imageUrl = existingImageUrl;
 
   if (imageFile && imageFile.size > 0) {
-      // Use user.id for the folder path to match RLS policy
-      const filePath = `${user_id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
+      const filePath = `${user.id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
       const { error: uploadError } = await supabase.storage
           .from('product-images')
           .upload(filePath, imageFile);
@@ -72,12 +77,11 @@ export async function saveProduct(formData: FormData) {
       const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(filePath);
       imageUrl = publicUrl;
 
-      // If there was an old image and we're uploading a new one, delete the old one.
       if (existingImageUrl) {
         try {
             const url = new URL(existingImageUrl);
             const path = url.pathname.split('/product-images/')[1];
-            if(path && path.startsWith(user_id)) {
+            if(path && path.startsWith(user.id)) {
               await supabase.storage.from('product-images').remove([path]);
             }
         } catch (e) {
@@ -88,10 +92,10 @@ export async function saveProduct(formData: FormData) {
 
   const dataToUpsert = {
     ...productData,
-    vendor_id,
+    vendor_id: verifiedVendorId, // Use the verified vendor ID
     id: id || undefined,
-    sizes: sizes ? sizes.split(',').map(s => s.trim()).filter(Boolean) : null,
-    colors: colors ? colors.split(',').map(c => c.trim()).filter(Boolean) : null,
+    sizes: productData.sizes ? productData.sizes.split(',').map(s => s.trim()).filter(Boolean) : null,
+    colors: productData.colors ? productData.colors.split(',').map(c => c.trim()).filter(Boolean) : null,
     image: imageUrl,
     updated_at: new Date().toISOString(),
   };
@@ -119,51 +123,43 @@ export async function deleteProduct(productId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Unauthorized' };
 
-    // Before deleting the product, we might need to delete its image from storage.
-    // First, get the product details to find the image URL.
+    // Before deleting the product, we must verify the user owns it via the vendors table.
     const { data: product } = await supabase
       .from('products')
-      .select('image, vendor_id')
+      .select('image, vendor_id, vendors(user_id)')
       .eq('id', productId)
       .single();
 
     if (!product) {
       return { success: false, error: 'Product not found.' };
     }
-    
-    // RLS Check for delete operation
-    const { data: vendorData } = await supabase
-        .from('vendors')
-        .select('user_id')
-        .eq('id', product.vendor_id)
-        .single();
-    if (!vendorData || vendorData.user_id !== user.id) {
+
+    // Check if the user ID from the joined vendors table matches the logged-in user.
+    if (product.vendors?.user_id !== user.id) {
         return { success: false, error: 'You do not have permission to delete this product.' };
     }
-
+    
+    // If the check passes, proceed to delete the image from storage.
     if (product.image) {
         try {
             const url = new URL(product.image);
             const path = url.pathname.split('/product-images/')[1];
-            if(path) {
-                // Ensure the path starts with the user's ID before deleting
-                if (path.startsWith(user.id)) {
-                  await supabase.storage.from('product-images').remove([path]);
-                }
+            if(path && path.startsWith(user.id)) {
+                await supabase.storage.from('product-images').remove([path]);
             }
         } catch (e) {
             console.error("Could not parse image URL or delete from storage", e);
         }
     }
 
-    const { error } = await supabase
+    const { error: deleteDbError } = await supabase
       .from('products')
       .delete()
       .eq('id', productId);
     
-    if (error) {
-        console.error('Error deleting product:', error);
-        return { success: false, error: `Could not delete product: ${error.message}` };
+    if (deleteDbError) {
+        console.error('Error deleting product from DB:', deleteDbError);
+        return { success: false, error: `Could not delete product: ${deleteDbError.message}` };
     }
     
     revalidatePath('/vendor/products');

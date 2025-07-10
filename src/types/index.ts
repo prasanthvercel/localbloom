@@ -28,6 +28,8 @@ export type Vendor = {
   updated_at?: string | null;
   // For client-side logic / joins
   products?: Product[];
+  // For RLS checks
+  vendors?: { user_id: string } | null;
 };
 
 // This type is used in product listings after joining tables
