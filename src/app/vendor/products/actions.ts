@@ -80,9 +80,9 @@ export async function saveProduct(formData: FormData) {
       if (existingImageUrl) {
         try {
             const url = new URL(existingImageUrl);
-            const path = url.pathname.split('/product-images/')[1];
-            if(path && path.startsWith(user.id)) {
-              await supabase.storage.from('product-images').remove([path]);
+            const oldPath = url.pathname.split('/product-images/')[1];
+            if(oldPath) {
+              await supabase.storage.from('product-images').remove([oldPath]);
             }
         } catch (e) {
             console.error("Could not parse or delete old product image", e);
@@ -144,7 +144,7 @@ export async function deleteProduct(productId: string) {
         try {
             const url = new URL(product.image);
             const path = url.pathname.split('/product-images/')[1];
-            if(path && path.startsWith(user.id)) {
+            if(path) {
                 await supabase.storage.from('product-images').remove([path]);
             }
         } catch (e) {
