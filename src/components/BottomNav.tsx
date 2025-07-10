@@ -103,13 +103,17 @@ export function BottomNav() {
     if (href.includes('vendor')) return pathname.startsWith('/vendor');
     return pathname.startsWith(href);
   }
+  
+  if (loading) {
+    return null; // Don't render anything while loading to prevent flicker
+  }
 
   const userRole = profile?.role || user?.user_metadata?.role;
   const isSubscribed = profile?.subscription_tier && profile.subscription_tier !== 'free';
   const navItems = userRole === 'vendor' ? vendorNavItems : baseNavItems;
 
   const itemsToDisplay = navItems.filter(item => {
-    if (item.auth && (loading || !user)) return false;
+    if (item.auth && !user) return false;
     if (item.role && userRole !== item.role) return false;
     if (item.href === '/nutrition' && !isSubscribed) return false;
     return true;
@@ -117,7 +121,7 @@ export function BottomNav() {
 
   const finalScannerItem = user ? scannerItem : scannerGateItem;
 
-  // Regular flex layout for vendors (or if loading)
+  // Regular flex layout for vendors
   if (userRole === 'vendor') {
     return (
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-card/95 backdrop-blur-sm md:hidden">

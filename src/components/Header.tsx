@@ -154,7 +154,7 @@ export function Header() {
         </Link>
         
         <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-          {navItemsToDisplay.map((item) => {
+          {!loading && navItemsToDisplay.map((item) => {
             if (item.isDropdown) {
               return (
                 <DropdownMenu key="categories-dropdown">
