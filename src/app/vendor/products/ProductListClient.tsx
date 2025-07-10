@@ -11,6 +11,8 @@ import Image from 'next/image';
 import { ProductFormDialog } from './ProductFormDialog';
 import { DeleteProductDialog } from './DeleteProductDialog';
 import type { Product } from '@/types';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface ProductListClientProps {
   initialProducts: Product[];
@@ -21,14 +23,9 @@ export function ProductListClient({ initialProducts }: ProductListClientProps) {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const router = useRouter();
 
     const handleAddProduct = () => {
-        setSelectedProduct(null);
-        setIsFormOpen(true);
-    };
-
-    const handleEditProduct = (product: Product) => {
-        setSelectedProduct(product);
         setIsFormOpen(true);
     };
     
@@ -37,14 +34,9 @@ export function ProductListClient({ initialProducts }: ProductListClientProps) {
         setIsDeleteOpen(true);
     };
 
-    const onProductSaved = (savedProduct: Product) => {
-        // If it was an edit, update the existing product.
-        if (products.some(p => p.id === savedProduct.id)) {
-            setProducts(products.map(p => p.id === savedProduct.id ? savedProduct : p));
-        } else {
-            // Otherwise, it was a new product, add it to the top of the list.
-            setProducts([savedProduct, ...products]);
-        }
+    const onProductCreated = (newProduct: Product) => {
+        setProducts(prev => [newProduct, ...prev]);
+        // The dialog now handles the redirect, so no action is needed here.
     }
 
     const onProductDeleted = (deletedProductId: string) => {
@@ -100,8 +92,10 @@ export function ProductListClient({ initialProducts }: ProductListClientProps) {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem onClick={() => handleEditProduct(product)}>
-                                                          <Pencil className="mr-2 h-4 w-4" /> Edit
+                                                        <DropdownMenuItem asChild>
+                                                            <Link href={`/vendor/products/${product.id}/edit`}>
+                                                                <Pencil className="mr-2 h-4 w-4" /> Edit
+                                                            </Link>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteProduct(product)}>
                                                           <Trash className="mr-2 h-4 w-4" /> Delete
@@ -127,8 +121,7 @@ export function ProductListClient({ initialProducts }: ProductListClientProps) {
             <ProductFormDialog
                 isOpen={isFormOpen}
                 setIsOpen={setIsFormOpen}
-                product={selectedProduct}
-                onProductSaved={onProductSaved}
+                onProductCreated={onProductCreated}
             />
 
             <DeleteProductDialog
@@ -140,3 +133,4 @@ export function ProductListClient({ initialProducts }: ProductListClientProps) {
         </div>
     );
 }
+
