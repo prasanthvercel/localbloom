@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -45,7 +46,7 @@ export async function saveProduct(formData: FormData) {
   
   const imageFile = formData.get('image') as File | null;
   const existingImageUrl = formData.get('existingImageUrl') as string | null;
-  let imageUrl = existingImageUrl || 'https://placehold.co/400x400.png';
+  let imageUrl = existingImageUrl;
 
   if (imageFile && imageFile.size > 0) {
       const filePath = `${vendor_id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
@@ -60,8 +61,6 @@ export async function saveProduct(formData: FormData) {
 
       const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(filePath);
       imageUrl = publicUrl;
-  } else if (!imageFile && !existingImageUrl) {
-      imageUrl = 'https://placehold.co/400x400.png';
   }
 
   const dataToUpsert = {
@@ -70,7 +69,7 @@ export async function saveProduct(formData: FormData) {
     id: id || undefined,
     sizes: sizes ? sizes.split(',').map(s => s.trim()).filter(Boolean) : null,
     colors: colors ? colors.split(',').map(c => c.trim()).filter(Boolean) : null,
-    image: imageUrl,
+    image: imageUrl || 'https://placehold.co/400x400.png',
     updated_at: new Date().toISOString(),
   };
 

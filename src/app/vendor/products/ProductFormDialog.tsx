@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type { Product } from '@/types';
 import { saveProduct } from './actions';
 import { ImageUploader } from '@/components/ImageUploader';
+import { useRouter } from 'next/navigation';
 
 interface ProductFormDialogProps {
     isOpen: boolean;
@@ -36,6 +37,7 @@ const formSchema = z.object({
 
 export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProductSaved }: ProductFormDialogProps) {
     const { toast } = useToast();
+    const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -104,6 +106,7 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProd
             });
             onProductSaved(result.data as Product);
             setIsOpen(false);
+            router.refresh();
         } else {
              toast({
                 title: 'Error',
