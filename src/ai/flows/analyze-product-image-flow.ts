@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview An AI flow to analyze a product image and find it in the marketplace.
@@ -11,6 +10,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
 const AnalyzeProductImageInputSchema = z.object({
   photoDataUri: z
@@ -111,7 +111,8 @@ const analyzeProductImageFlow = ai.defineFlow(
     outputSchema: AnalyzeProductImageOutputSchema,
   },
   async (input) => {
-    const supabase = createClient();
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
     
     let profile: { scan_count: number | null, last_scan_date: string | null, height: number | null, weight: number | null, wellness_goal: string | null, health_conditions: string | null } | null = null;
 

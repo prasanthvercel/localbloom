@@ -1,4 +1,3 @@
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -69,7 +68,7 @@ export async function saveProduct(formData: FormData) {
     id: id || undefined,
     sizes: sizes ? sizes.split(',').map(s => s.trim()).filter(Boolean) : null,
     colors: colors ? colors.split(',').map(c => c.trim()).filter(Boolean) : null,
-    image: imageUrl || 'https://placehold.co/400x400.png',
+    image: imageUrl,
     updated_at: new Date().toISOString(),
   };
 

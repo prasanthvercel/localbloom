@@ -1,9 +1,9 @@
-
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { cookies } from 'next/headers';
 
 const LogItemSchema = z.object({
   food_name: z.string(),
@@ -18,7 +18,8 @@ const LogItemSchema = z.object({
 export type LogItemData = z.infer<typeof LogItemSchema>;
 
 export async function logConsumedItem(itemData: LogItemData) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -49,7 +50,8 @@ const WellnessProfileSchema = z.object({
 export type WellnessProfileData = z.infer<typeof WellnessProfileSchema>;
 
 export async function updateWellnessProfile(data: WellnessProfileData) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

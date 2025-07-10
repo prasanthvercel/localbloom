@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { ProductResults } from '@/components/products/ProductResults';
 import type { ProductWithVendor, ShoppingListItem } from '@/types';
-import { ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies';
+import { type ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies';
 import { cookies } from 'next/headers';
 
 async function getProducts(supabase: ReturnType<typeof createClient>, category?: string, query?: string): Promise<ProductWithVendor[]> {
