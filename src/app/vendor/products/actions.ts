@@ -9,7 +9,6 @@ import { cookies } from 'next/headers';
 const productActionSchema = z.object({
     id: z.string().uuid().optional().nullable(),
     vendor_id: z.string().uuid(),
-    user_id: z.string().uuid(), // Add user_id to validation
     name: z.string().min(3, 'Name must be at least 3 characters'),
     price: z.coerce.number().positive('Price must be a positive number'),
     unit: z.string().optional().nullable(),
@@ -29,7 +28,6 @@ export async function saveProduct(formData: FormData) {
   const rawData = {
       id: formData.get('id'),
       vendor_id: formData.get('vendor_id'),
-      user_id: formData.get('user_id'),
       name: formData.get('name'),
       price: formData.get('price'),
       unit: formData.get('unit'),
@@ -44,25 +42,21 @@ export async function saveProduct(formData: FormData) {
     return { success: false, error: JSON.stringify(validation.error.flatten().fieldErrors) };
   }
   
-  if (user.id !== validation.data.user_id) {
-    return { success: false, error: "User ID mismatch. Unauthorized."};
-  }
-  
-  const { id, vendor_id, user_id, sizes, colors, ...productData } = validation.data;
+  const { id, vendor_id, sizes, colors, ...productData } = validation.data;
   
   const imageFile = formData.get('image') as File | null;
   const existingImageUrl = formData.get('existingImageUrl') as string | null;
   let imageUrl = existingImageUrl;
 
   if (imageFile && imageFile.size > 0) {
-      // Use user_id for the folder path to match RLS policy
+      // Use user.id for the folder path to match RLS policy, same as shop images
       const filePath = `${user.id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
       const { error: uploadError } = await supabase.storage
           .from('product-images')
           .upload(filePath, imageFile);
 
       if (uploadError) {
-          console.error('Error uploading image:', uploadError);
+          console.error('Error uploading product image:', uploadError);
           return { success: false, error: `Could not upload image: ${uploadError.message}` };
       }
 
