@@ -41,7 +41,6 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
         };
         const compressedFile = await imageCompression(file, options);
         
-        // Reset crop state when a new file is dropped
         setCrop(undefined); 
         setCompletedCrop(undefined);
 
@@ -136,8 +135,6 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
           const croppedFile = new File([blob], 'cropped-image.jpeg', { type: 'image/jpeg' });
           onChange(croppedFile);
           setIsCropperOpen(false);
-          URL.revokeObjectURL(cropperImgSrc);
-          setCropperImgSrc('');
         }
       },
       'image/jpeg',
@@ -161,12 +158,12 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
   }
 
   useEffect(() => {
-    return () => {
-      if(cropperImgSrc) {
-        URL.revokeObjectURL(cropperImgSrc);
-      }
-    };
-  }, [cropperImgSrc]);
+    // When the dialog is closed, revoke the object URL to prevent memory leaks
+    if (!isCropperOpen && cropperImgSrc) {
+      URL.revokeObjectURL(cropperImgSrc);
+      setCropperImgSrc('');
+    }
+  }, [isCropperOpen, cropperImgSrc]);
 
   return (
     <>
