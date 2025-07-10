@@ -21,6 +21,7 @@ interface ProductFormDialogProps {
     setIsOpen: (open: boolean) => void;
     product: Product | null;
     vendorId: string;
+    userId: string; // Add userId to props
     onProductSaved: (product: Product) => void;
 }
 
@@ -35,7 +36,7 @@ const formSchema = z.object({
     colors: z.string().optional(),
 });
 
-export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProductSaved }: ProductFormDialogProps) {
+export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, userId, onProductSaved }: ProductFormDialogProps) {
     const { toast } = useToast();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
@@ -86,6 +87,8 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProd
             formData.append('id', product.id);
         }
         formData.append('vendor_id', vendorId);
+        formData.append('user_id', userId); // Pass the user ID to the action
+
         if (values.unit) formData.append('unit', values.unit);
         if (values.discount) formData.append('discount', values.discount);
         if (values.sizes) formData.append('sizes', values.sizes);
@@ -110,7 +113,7 @@ export function ProductFormDialog({ isOpen, setIsOpen, product, vendorId, onProd
         } else {
              toast({
                 title: 'Error',
-                description: 'There was a problem saving the product.',
+                description: result.error || 'There was a problem saving the product.',
                 variant: 'destructive',
             });
         }

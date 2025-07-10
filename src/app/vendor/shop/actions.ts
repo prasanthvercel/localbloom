@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -37,6 +38,7 @@ export async function updateShopDetails(formData: FormData) {
   let imageUrl = existingImageUrl || 'https://placehold.co/400x250.png';
 
   if (imageFile && imageFile.size > 0) {
+      // Use user.id for the folder path to match RLS policy
       const filePath = `${user.id}/banner-${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
       const { error: uploadError } = await supabase.storage
           .from('shop-images')

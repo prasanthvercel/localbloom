@@ -1,3 +1,4 @@
+
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Header } from '@/components/Header';
@@ -46,6 +47,7 @@ export default async function VendorProductsPage() {
          <ProductListClient 
             initialProducts={(products as Product[]) || []} 
             vendorId={vendor.id} 
+            userId={user.id}
          />
       </main>
     </div>
