@@ -1,6 +1,7 @@
 
 'use client';
 
+import 'react-image-crop/dist/ReactCrop.css';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -177,9 +178,10 @@ export function ShopForm({ user, vendor }: ShopFormProps) {
                         value={field.value} 
                         onChange={field.onChange}
                         className="aspect-[16/6]" 
+                        aspectRatio={16 / 6}
                       />
                     </FormControl>
-                    <FormDescription>Recommended aspect ratio: 16:6.</FormDescription>
+                    <FormDescription>Recommended aspect ratio: 16:6. Click image to crop.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
