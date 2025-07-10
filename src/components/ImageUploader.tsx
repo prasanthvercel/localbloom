@@ -73,6 +73,10 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
       setImgSrc(value);
     } else if (value === null) {
       setImgSrc(null);
+    } else if (value instanceof File) {
+        const url = URL.createObjectURL(value);
+        setImgSrc(url);
+        return () => URL.revokeObjectURL(url);
     }
   }, [value]);
 
@@ -167,7 +171,7 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
     <div
       {...getRootProps()}
       className={cn(
-        'relative flex items-center justify-center w-full rounded-md border-2 border-dashed border-muted-foreground/30 bg-muted/50 cursor-pointer hover:border-primary/50 transition-colors',
+        'relative flex items-center justify-center w-full rounded-md border-2 border-dashed border-muted-foreground/30 bg-muted/50 cursor-pointer hover:border-primary/50 transition-colors aspect-square',
         className,
         isDragActive && 'border-primary',
         showCropper && 'aspect-auto'
