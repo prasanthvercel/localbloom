@@ -43,16 +43,16 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
           maxWidthOrHeight: 1920,
         };
         const compressedFile = await imageCompression(file, options);
-        
+        const cropperUrl = URL.createObjectURL(compressedFile);
+
         if (aspectRatio) {
-            // If cropping is enabled, don't call onChange yet.
-            // Open the cropper with the compressed file.
-            const cropperUrl = URL.createObjectURL(compressedFile);
+            // If cropping is enabled, open the cropper with the new file.
             setCropperImgSrc(cropperUrl);
             setIsCropperOpen(true);
         } else {
-            // If no cropping, just set the value.
+            // If no cropping, just set the value and revoke the temporary URL.
             onChange(compressedFile);
+            URL.revokeObjectURL(cropperUrl);
         }
 
       } catch (error) {
@@ -133,6 +133,8 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
           const croppedFile = new File([blob], 'cropped-image.jpeg', { type: 'image/jpeg' });
           onChange(croppedFile);
           setIsCropperOpen(false);
+          URL.revokeObjectURL(cropperImgSrc); // Clean up the cropper's blob URL
+          setCropperImgSrc('');
         }
       },
       'image/jpeg',
@@ -143,11 +145,17 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (preview) {
-      URL.revokeObjectURL(preview);
-    }
     onChange(null);
     setPreview(null);
+  }
+
+  const handleOpenCropper = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (preview) {
+        setCropperImgSrc(preview);
+        setIsCropperOpen(true);
+    }
   }
 
   // Cleanup effect
@@ -186,10 +194,10 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
                   <X className="h-4 w-4" />
               </Button>
               {aspectRatio && (
-                <div {...getRootProps()} className="absolute bottom-2 right-2 z-10">
-                    <Button variant="secondary" size="sm" onClick={(e) => e.stopPropagation()}>
+                <div className="absolute bottom-2 right-2 z-10">
+                    <Button variant="secondary" size="sm" onClick={handleOpenCropper}>
                         <Crop className="h-4 w-4 mr-2" />
-                        Re-upload to Crop
+                        Crop Image
                     </Button>
                 </div>
               )}
@@ -208,15 +216,17 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
                 <DialogTitle>Crop your image</DialogTitle>
             </DialogHeader>
             <div className="mt-4">
-                <ReactCrop
-                crop={crop}
-                onChange={(_, percentCrop) => setCrop(percentCrop)}
-                onComplete={(c) => setCompletedCrop(c)}
-                aspect={aspectRatio}
-                minWidth={100}
-                >
-                <img ref={imgRef} src={cropperImgSrc} alt="Crop preview" onLoad={onImageLoad} className="w-full" />
-                </ReactCrop>
+                {cropperImgSrc && (
+                    <ReactCrop
+                    crop={crop}
+                    onChange={(_, percentCrop) => setCrop(percentCrop)}
+                    onComplete={(c) => setCompletedCrop(c)}
+                    aspect={aspectRatio}
+                    minWidth={100}
+                    >
+                    <img ref={imgRef} src={cropperImgSrc} alt="Crop preview" onLoad={onImageLoad} className="w-full" />
+                    </ReactCrop>
+                )}
             </div>
             <DialogFooter className="mt-4">
                 <Button variant="outline" onClick={() => setIsCropperOpen(false)}>Cancel</Button>
