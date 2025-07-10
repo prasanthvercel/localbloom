@@ -43,13 +43,27 @@ export async function saveProduct(formData: FormData) {
   }
   
   const { id, vendor_id, sizes, colors, ...productData } = validation.data;
+
+  // RLS Check: Verify the user owns the vendor they are trying to save to.
+  const { data: vendorData, error: vendorError } = await supabase
+    .from('vendors')
+    .select('user_id')
+    .eq('id', vendor_id)
+    .single();
+
+  if (vendorError || !vendorData) {
+    return { success: false, error: 'Vendor not found.' };
+  }
+  if (vendorData.user_id !== user.id) {
+    return { success: false, error: 'You do not have permission to modify this shop.' };
+  }
   
   const imageFile = formData.get('image') as File | null;
   const existingImageUrl = formData.get('existingImageUrl') as string | null;
   let imageUrl = existingImageUrl;
 
   if (imageFile && imageFile.size > 0) {
-      // Use user.id for the folder path to match RLS policy, same as shop images
+      // Use user.id for the folder path to match RLS policy
       const filePath = `${user.id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
       const { error: uploadError } = await supabase.storage
           .from('product-images')
@@ -101,16 +115,33 @@ export async function deleteProduct(productId: string) {
     // First, get the product details to find the image URL.
     const { data: product } = await supabase
       .from('products')
-      .select('image')
+      .select('image, vendor_id')
       .eq('id', productId)
       .single();
 
-    if (product?.image) {
+    if (!product) {
+      return { success: false, error: 'Product not found.' };
+    }
+    
+    // RLS Check for delete operation
+    const { data: vendorData } = await supabase
+        .from('vendors')
+        .select('user_id')
+        .eq('id', product.vendor_id)
+        .single();
+    if (!vendorData || vendorData.user_id !== user.id) {
+        return { success: false, error: 'You do not have permission to delete this product.' };
+    }
+
+    if (product.image) {
         try {
             const url = new URL(product.image);
             const path = url.pathname.split('/product-images/')[1];
             if(path) {
-                await supabase.storage.from('product-images').remove([path]);
+                // Ensure the path starts with the user's ID before deleting
+                if (path.startsWith(user.id)) {
+                  await supabase.storage.from('product-images').remove([path]);
+                }
             }
         } catch (e) {
             console.error("Could not parse image URL or delete from storage", e);
