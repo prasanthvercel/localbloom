@@ -33,9 +33,6 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
     const file = acceptedFiles[0];
     if (file) {
       setIsCompressing(true);
-      if (preview) {
-        URL.revokeObjectURL(preview);
-      }
       
       try {
         const options = {
@@ -43,24 +40,27 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
           maxWidthOrHeight: 1920,
         };
         const compressedFile = await imageCompression(file, options);
-        const cropperUrl = URL.createObjectURL(compressedFile);
+        
+        // Reset crop state when a new file is dropped
+        setCrop(undefined); 
+        setCompletedCrop(undefined);
 
         if (aspectRatio) {
+            const cropperUrl = URL.createObjectURL(compressedFile);
             setCropperImgSrc(cropperUrl);
             setIsCropperOpen(true);
         } else {
             onChange(compressedFile);
-            URL.revokeObjectURL(cropperUrl);
         }
 
       } catch (error) {
         console.error('Image compression failed:', error);
-        onChange(file);
+        onChange(file); // Fallback to original file
       } finally {
         setIsCompressing(false);
       }
     }
-  }, [onChange, preview, aspectRatio]);
+  }, [onChange, aspectRatio]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -69,15 +69,21 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
   });
   
   useEffect(() => {
-    if (typeof value === 'string' && !value.startsWith('blob:')) {
+    let objectUrl: string | null = null;
+    if (typeof value === 'string') {
       setPreview(value);
-    } else if (value === null) {
-      setPreview(null);
     } else if (value instanceof File) {
-        const url = URL.createObjectURL(value);
-        setPreview(url);
-        return () => URL.revokeObjectURL(url);
+        objectUrl = URL.createObjectURL(value);
+        setPreview(objectUrl);
+    } else {
+        setPreview(null);
     }
+    
+    return () => {
+        if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+        }
+    };
   }, [value]);
 
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
@@ -143,7 +149,6 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
     e.stopPropagation();
     e.preventDefault();
     onChange(null);
-    setPreview(null);
   }
 
   const handleOpenCropper = (e: React.MouseEvent) => {
@@ -157,21 +162,18 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
 
   useEffect(() => {
     return () => {
-      if (preview && preview.startsWith('blob:')) {
-        URL.revokeObjectURL(preview);
-      }
       if(cropperImgSrc) {
         URL.revokeObjectURL(cropperImgSrc);
       }
     };
-  }, [preview, cropperImgSrc]);
+  }, [cropperImgSrc]);
 
   return (
     <>
       <div
         {...getRootProps()}
         className={cn(
-          'relative flex items-center justify-center w-full rounded-md border-2 border-dashed border-muted-foreground/30 bg-muted/50 cursor-pointer hover:border-primary/50 transition-colors aspect-square',
+          'relative flex items-center justify-center w-full rounded-md border-2 border-dashed border-muted-foreground/30 bg-muted/50 cursor-pointer hover:border-primary/50 transition-colors',
           className,
           isDragActive && 'border-primary'
         )}
