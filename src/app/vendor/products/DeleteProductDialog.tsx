@@ -49,7 +49,7 @@ export function DeleteProductDialog({ isOpen, setIsOpen, product, onProductDelet
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
             This action cannot be undone. This will permanently delete the product
-            <span className="font-semibold"> {product?.name}</span> from your shop.
+            <span className="font-semibold"> {product?.name}</span> and its image from your shop.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

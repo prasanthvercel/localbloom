@@ -56,7 +56,7 @@ export async function saveProduct(formData: FormData) {
 
   if (imageFile && imageFile.size > 0) {
       // Use user_id for the folder path to match RLS policy
-      const filePath = `${user_id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
+      const filePath = `${user.id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
       const { error: uploadError } = await supabase.storage
           .from('product-images')
           .upload(filePath, imageFile);
@@ -102,6 +102,26 @@ export async function deleteProduct(productId: string) {
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Unauthorized' };
+
+    // Before deleting the product, we might need to delete its image from storage.
+    // First, get the product details to find the image URL.
+    const { data: product } = await supabase
+      .from('products')
+      .select('image')
+      .eq('id', productId)
+      .single();
+
+    if (product?.image) {
+        try {
+            const url = new URL(product.image);
+            const path = url.pathname.split('/product-images/')[1];
+            if(path) {
+                await supabase.storage.from('product-images').remove([path]);
+            }
+        } catch (e) {
+            console.error("Could not parse image URL or delete from storage", e);
+        }
+    }
 
     const { error } = await supabase
       .from('products')
