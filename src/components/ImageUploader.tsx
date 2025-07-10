@@ -9,6 +9,8 @@ import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import imageCompression from 'browser-image-compression';
 import ReactCrop, { type Crop as CropType, centerCrop, makeAspectCrop } from 'react-image-crop';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+
 
 interface ImageUploaderProps {
   value: File | string | null;
@@ -18,21 +20,21 @@ interface ImageUploaderProps {
 }
 
 export function ImageUploader({ value, onChange, className, aspectRatio }: ImageUploaderProps) {
-  const [imgSrc, setImgSrc] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
   const [crop, setCrop] = useState<CropType>();
   const [completedCrop, setCompletedCrop] = useState<CropType>();
   const [isCompressing, setIsCompressing] = useState(false);
-  const [showCropper, setShowCropper] = useState(false);
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
+  const [cropperImgSrc, setCropperImgSrc] = useState<string>('');
   
   const imgRef = useRef<HTMLImageElement>(null);
-  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
       setIsCompressing(true);
-      if (imgSrc) {
-        URL.revokeObjectURL(imgSrc);
+      if (preview) {
+        URL.revokeObjectURL(preview);
       }
       
       try {
@@ -40,27 +42,27 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
           maxSizeMB: 1,
           maxWidthOrHeight: 1920,
         };
-        console.log('Original image size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
         const compressedFile = await imageCompression(file, options);
-        console.log('Compressed image size:', (compressedFile.size / 1024 / 1024).toFixed(2), 'MB');
         
-        const newPreview = URL.createObjectURL(compressedFile);
-        setImgSrc(newPreview);
-
         if (aspectRatio) {
-          setShowCropper(true);
+            // If cropping is enabled, don't call onChange yet.
+            // Open the cropper with the compressed file.
+            const cropperUrl = URL.createObjectURL(compressedFile);
+            setCropperImgSrc(cropperUrl);
+            setIsCropperOpen(true);
         } else {
-          onChange(compressedFile);
+            // If no cropping, just set the value.
+            onChange(compressedFile);
         }
 
       } catch (error) {
         console.error('Image compression failed:', error);
-        onChange(file);
+        onChange(file); // Fallback to original file
       } finally {
         setIsCompressing(false);
       }
     }
-  }, [onChange, imgSrc, aspectRatio]);
+  }, [onChange, preview, aspectRatio]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -69,13 +71,14 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
   });
   
   useEffect(() => {
+    // This effect manages the preview URL based on the `value` prop
     if (typeof value === 'string' && !value.startsWith('blob:')) {
-      setImgSrc(value);
+      setPreview(value);
     } else if (value === null) {
-      setImgSrc(null);
+      setPreview(null);
     } else if (value instanceof File) {
         const url = URL.createObjectURL(value);
-        setImgSrc(url);
+        setPreview(url);
         return () => URL.revokeObjectURL(url);
     }
   }, [value]);
@@ -95,39 +98,33 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
 
   const handleCropConfirm = async () => {
     const image = imgRef.current;
-    const canvas = previewCanvasRef.current;
-    if (!image || !canvas || !completedCrop) {
+    if (!image || !completedCrop) {
       return;
     }
 
+    const canvas = document.createElement('canvas');
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
-    const pixelRatio = window.devicePixelRatio;
-
-    canvas.width = Math.floor(completedCrop.width * scaleX * pixelRatio);
-    canvas.height = Math.floor(completedCrop.height * scaleY * pixelRatio);
+    
+    canvas.width = Math.floor(completedCrop.width * scaleX);
+    canvas.height = Math.floor(completedCrop.height * scaleY);
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.scale(pixelRatio, pixelRatio);
-    ctx.imageSmoothingQuality = 'high';
-
     const cropX = completedCrop.x * scaleX;
     const cropY = completedCrop.y * scaleY;
-    const cropWidth = completedCrop.width * scaleX;
-    const cropHeight = completedCrop.height * scaleY;
 
     ctx.drawImage(
       image,
       cropX,
       cropY,
-      cropWidth,
-      cropHeight,
-      0,
-      0,
       completedCrop.width * scaleX,
-      completedCrop.height * scaleY
+      completedCrop.height * scaleY,
+      0,
+      0,
+      canvas.width,
+      canvas.height
     );
 
     canvas.toBlob(
@@ -135,10 +132,7 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
         if (blob) {
           const croppedFile = new File([blob], 'cropped-image.jpeg', { type: 'image/jpeg' });
           onChange(croppedFile);
-          setShowCropper(false);
-          // Create a new URL for the cropped image to display it
-          if (imgSrc) URL.revokeObjectURL(imgSrc);
-          setImgSrc(URL.createObjectURL(croppedFile));
+          setIsCropperOpen(false);
         }
       },
       'image/jpeg',
@@ -149,80 +143,87 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (imgSrc) {
-      URL.revokeObjectURL(imgSrc);
+    if (preview) {
+      URL.revokeObjectURL(preview);
     }
     onChange(null);
-    setShowCropper(false);
-    setImgSrc(null);
+    setPreview(null);
   }
 
   // Cleanup effect
   useEffect(() => {
     return () => {
-      if (imgSrc && imgSrc.startsWith('blob:')) {
-        URL.revokeObjectURL(imgSrc);
+      if (preview && preview.startsWith('blob:')) {
+        URL.revokeObjectURL(preview);
+      }
+      if(cropperImgSrc) {
+        URL.revokeObjectURL(cropperImgSrc);
       }
     };
-  }, [imgSrc]);
+  }, [preview, cropperImgSrc]);
 
   return (
     <>
-    <div
-      {...getRootProps()}
-      className={cn(
-        'relative flex items-center justify-center w-full rounded-md border-2 border-dashed border-muted-foreground/30 bg-muted/50 cursor-pointer hover:border-primary/50 transition-colors aspect-square',
-        className,
-        isDragActive && 'border-primary',
-        showCropper && 'aspect-auto'
-      )}
-    >
-      <input {...getInputProps()} />
+      <div
+        {...getRootProps()}
+        className={cn(
+          'relative flex items-center justify-center w-full rounded-md border-2 border-dashed border-muted-foreground/30 bg-muted/50 cursor-pointer hover:border-primary/50 transition-colors aspect-square',
+          className,
+          isDragActive && 'border-primary'
+        )}
+      >
+        <input {...getInputProps()} />
 
-      {isCompressing ? (
-         <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground text-center p-4">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="text-sm font-semibold">Optimizing image...</p>
-        </div>
-      ) : showCropper && imgSrc ? (
-        <div className="w-full">
-            <ReactCrop
-              crop={crop}
-              onChange={(_, percentCrop) => setCrop(percentCrop)}
-              onComplete={(c) => setCompletedCrop(c)}
-              aspect={aspectRatio}
-              minWidth={100}
-            >
-              <img ref={imgRef} src={imgSrc} alt="Crop preview" onLoad={onImageLoad} className="w-full" />
-            </ReactCrop>
-        </div>
-      ) : imgSrc ? (
-        <>
-            <Image src={imgSrc} alt="Image preview" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover rounded-md" data-ai-hint="product photo" />
-            <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7 z-10" onClick={handleRemove}>
-                <X className="h-4 w-4" />
-            </Button>
-            {aspectRatio && (
-              <Button variant="secondary" size="sm" className="absolute bottom-2 right-2 z-10" onClick={(e) => { e.stopPropagation(); setShowCropper(true); }}>
-                  <Crop className="h-4 w-4 mr-2" />
-                  Crop Image
+        {isCompressing ? (
+          <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground text-center p-4">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p className="text-sm font-semibold">Optimizing image...</p>
+          </div>
+        ) : preview ? (
+          <>
+              <Image src={preview} alt="Image preview" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover rounded-md" data-ai-hint="product photo" />
+              <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7 z-10" onClick={handleRemove}>
+                  <X className="h-4 w-4" />
               </Button>
-            )}
-        </>
-      ) : (
-        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground text-center p-4">
-          <Upload className="h-8 w-8" />
-          <p className="text-sm font-semibold">Drop an image here, or click to select</p>
-        </div>
-      )}
-    </div>
-    {showCropper && imgSrc && (
-        <div className="flex justify-end gap-2 mt-2">
-            <Button variant="outline" onClick={() => setShowCropper(false)}>Cancel</Button>
-            <Button onClick={handleCropConfirm}>Confirm Crop</Button>
-        </div>
-    )}
-    <canvas ref={previewCanvasRef} className="hidden" />
+              {aspectRatio && (
+                <div {...getRootProps()} className="absolute bottom-2 right-2 z-10">
+                    <Button variant="secondary" size="sm" onClick={(e) => e.stopPropagation()}>
+                        <Crop className="h-4 w-4 mr-2" />
+                        Re-upload to Crop
+                    </Button>
+                </div>
+              )}
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground text-center p-4">
+            <Upload className="h-8 w-8" />
+            <p className="text-sm font-semibold">Drop an image here, or click to select</p>
+          </div>
+        )}
+      </div>
+
+      <Dialog open={isCropperOpen} onOpenChange={setIsCropperOpen}>
+        <DialogContent className="max-w-md">
+            <DialogHeader>
+                <DialogTitle>Crop your image</DialogTitle>
+            </DialogHeader>
+            <div className="mt-4">
+                <ReactCrop
+                crop={crop}
+                onChange={(_, percentCrop) => setCrop(percentCrop)}
+                onComplete={(c) => setCompletedCrop(c)}
+                aspect={aspectRatio}
+                minWidth={100}
+                >
+                <img ref={imgRef} src={cropperImgSrc} alt="Crop preview" onLoad={onImageLoad} className="w-full" />
+                </ReactCrop>
+            </div>
+            <DialogFooter className="mt-4">
+                <Button variant="outline" onClick={() => setIsCropperOpen(false)}>Cancel</Button>
+                <Button onClick={handleCropConfirm}>Confirm Crop</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
