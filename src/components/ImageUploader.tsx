@@ -46,18 +46,16 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
         const cropperUrl = URL.createObjectURL(compressedFile);
 
         if (aspectRatio) {
-            // If cropping is enabled, open the cropper with the new file.
             setCropperImgSrc(cropperUrl);
             setIsCropperOpen(true);
         } else {
-            // If no cropping, just set the value and revoke the temporary URL.
             onChange(compressedFile);
             URL.revokeObjectURL(cropperUrl);
         }
 
       } catch (error) {
         console.error('Image compression failed:', error);
-        onChange(file); // Fallback to original file
+        onChange(file);
       } finally {
         setIsCompressing(false);
       }
@@ -71,7 +69,6 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
   });
   
   useEffect(() => {
-    // This effect manages the preview URL based on the `value` prop
     if (typeof value === 'string' && !value.startsWith('blob:')) {
       setPreview(value);
     } else if (value === null) {
@@ -133,7 +130,7 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
           const croppedFile = new File([blob], 'cropped-image.jpeg', { type: 'image/jpeg' });
           onChange(croppedFile);
           setIsCropperOpen(false);
-          URL.revokeObjectURL(cropperImgSrc); // Clean up the cropper's blob URL
+          URL.revokeObjectURL(cropperImgSrc);
           setCropperImgSrc('');
         }
       },
@@ -158,7 +155,6 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
     }
   }
 
-  // Cleanup effect
   useEffect(() => {
     return () => {
       if (preview && preview.startsWith('blob:')) {
