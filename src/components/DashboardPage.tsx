@@ -15,8 +15,7 @@ import { Search as SearchIcon, Leaf, Cake, Paintbrush, Utensils, Shirt, ArrowRig
 import { VendorCard } from './VendorCard';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import Autoplay from "embla-carousel-autoplay"
-import type { Vendor } from '@/types';
-import type { ShoppingListItem } from '@/app/shopping-list/actions';
+import type { Vendor, ShoppingListItem } from '@/types';
 
 interface DashboardPageProps {
     user: SupabaseUser | null;
