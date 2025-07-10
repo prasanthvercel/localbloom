@@ -223,7 +223,7 @@ export function ImageUploader({ value, onChange, className, aspectRatio }: Image
                 aspect={aspectRatio}
                 minWidth={100}
                 >
-                <img ref={imgRef} src={cropperImgSrc} alt="Crop preview" onLoad={onImageLoad} className="w-full" />
+                <img ref={imgRef} src={cropperImgSrc} alt="Crop preview" onLoad={onImageLoad} className="w-full" key={cropperImgSrc} />
                 </ReactCrop>
             )}
             <DialogFooter className="mt-4">
