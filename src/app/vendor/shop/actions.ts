@@ -35,7 +35,7 @@ export async function updateShopDetails(formData: FormData) {
   const { name, category, description } = validation.data;
   const imageFile = formData.get('image') as File | null;
   const existingImageUrl = formData.get('existingImageUrl') as string | null;
-  let imageUrl = existingImageUrl || 'https://placehold.co/400x250.png';
+  let imageUrl = existingImageUrl;
 
   if (imageFile && imageFile.size > 0) {
       // Use user.id for the folder path to match RLS policy
@@ -51,8 +51,6 @@ export async function updateShopDetails(formData: FormData) {
       
       const { data: { publicUrl } } = supabase.storage.from('shop-images').getPublicUrl(filePath);
       imageUrl = publicUrl;
-  } else if (!imageFile && !existingImageUrl) {
-    imageUrl = 'https://placehold.co/400x250.png';
   }
   
   const vendorData = {
