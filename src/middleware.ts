@@ -13,15 +13,15 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
+        get: (name: string) => {
           return request.cookies.get(name)?.value
         },
-        set(name: string, value: string, options: CookieOptions) {
+        set: (name: string, value: string, options: CookieOptions) => {
           request.cookies.set({ name, value, ...options, })
           response = NextResponse.next({ request: { headers: request.headers, }, })
           response.cookies.set({ name, value, ...options, })
         },
-        remove(name: string, options: CookieOptions) {
+        remove: (name: string, options: CookieOptions) => {
           request.cookies.set({ name, value: '', ...options, })
           response = NextResponse.next({ request: { headers: request.headers, }, })
           response.cookies.set({ name, value: '', ...options, })
@@ -56,16 +56,17 @@ export async function middleware(request: NextRequest) {
     }
     
     // For vendors, check if they have created their shop.
+    // If they are a vendor and not on the shop setup page or account page, check for profile completion.
     if (isVendor && !currentPath.startsWith('/vendor/shop') && !currentPath.startsWith('/account')) {
       const { data: vendor, error } = await supabase
         .from('vendors')
         .select('name, category, description')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle to not error if vendor doesn't exist
       
       const isShopProfileIncomplete = !vendor || !vendor.name || !vendor.category || !vendor.description;
 
-      if (isShopProfileIncomplete && (error?.code === 'PGRST116' || !error)) {
+      if (isShopProfileIncomplete) {
          const url = request.nextUrl.clone()
          url.pathname = '/vendor/shop'
          return NextResponse.redirect(url)
