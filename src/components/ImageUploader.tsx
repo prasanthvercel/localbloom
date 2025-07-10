@@ -20,30 +20,42 @@ export function ImageUploader({ value, onChange, className }: ImageUploaderProps
   const [isCompressing, setIsCompressing] = useState(false);
 
   useEffect(() => {
+    // This effect handles setting the initial preview from a URL string
+    // or clearing the preview if the value is reset from the parent form.
     if (typeof value === 'string') {
       setPreview(value);
-    } else if (value instanceof File) {
-      const newPreview = URL.createObjectURL(value);
-      setPreview(newPreview);
-      return () => URL.revokeObjectURL(newPreview);
-    } else {
+    } else if (value === null) {
       setPreview(null);
     }
+    // We don't handle File objects here to avoid re-generating the blob URL on every render.
+    // The preview for a new file is set in onDrop.
   }, [value]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
       setIsCompressing(true);
+      setPreview(null); // Clear previous preview
+      if (preview) {
+        // Revoke the old object URL to prevent memory leaks
+        URL.revokeObjectURL(preview);
+      }
+      
       try {
         const options = {
-          maxSizeMB: 1, // Max file size 1MB
-          maxWidthOrHeight: 1024, // Max width/height 1024px
-          useWebWorker: false, // Disabling web worker to fix bug
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1024,
+          useWebWorker: false,
         };
         console.log('Original image size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
         const compressedFile = await imageCompression(file, options);
         console.log('Compressed image size:', (compressedFile.size / 1024 / 1024).toFixed(2), 'MB');
+        
+        // Create a new preview URL from the compressed file
+        const newPreview = URL.createObjectURL(compressedFile);
+        setPreview(newPreview);
+        
+        // Pass the compressed file to the parent form
         onChange(compressedFile);
       } catch (error) {
         console.error('Image compression failed:', error);
@@ -53,7 +65,7 @@ export function ImageUploader({ value, onChange, className }: ImageUploaderProps
         setIsCompressing(false);
       }
     }
-  }, [onChange]);
+  }, [onChange, preview]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -64,8 +76,20 @@ export function ImageUploader({ value, onChange, className }: ImageUploaderProps
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    if (preview) {
+      URL.revokeObjectURL(preview);
+    }
     onChange(null);
   }
+
+  // Cleanup effect to revoke object URL when component unmounts
+  useEffect(() => {
+    return () => {
+      if (preview && preview.startsWith('blob:')) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
 
   return (
     <div
@@ -85,7 +109,7 @@ export function ImageUploader({ value, onChange, className }: ImageUploaderProps
         </div>
       ) : preview ? (
         <>
-            <Image src={preview} alt="Image preview" fill className="object-cover rounded-md" data-ai-hint="product photo" />
+            <Image src={preview} alt="Image preview" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover rounded-md" data-ai-hint="product photo" />
             <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7 z-10" onClick={handleRemove}>
                 <X className="h-4 w-4" />
             </Button>
