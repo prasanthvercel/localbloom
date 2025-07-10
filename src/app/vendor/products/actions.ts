@@ -26,8 +26,8 @@ export async function saveProduct(formData: FormData) {
     return { success: false, error: 'Unauthorized: You must be logged in to save a product.' };
   }
 
-  // First, verify ownership and get the vendor ID associated with this user.
-  // This is the most important security check and the root of the previous issues.
+  // CRITICAL FIX: First, get the vendor ID associated with this user.
+  // This is the most important security check.
   const { data: vendorData, error: vendorError } = await supabase
     .from('vendors')
     .select('id')
@@ -84,7 +84,7 @@ export async function saveProduct(formData: FormData) {
             const url = new URL(existingImageUrl);
             // Extract path from Supabase URL: /storage/v1/object/public/product-images/[path]
             const oldPath = url.pathname.split('/product-images/')[1];
-            if(oldPath) {
+            if(oldPath && oldPath.startsWith(user.id)) { // extra check
               await supabase.storage.from('product-images').remove([oldPath]);
             }
         } catch (e) {
