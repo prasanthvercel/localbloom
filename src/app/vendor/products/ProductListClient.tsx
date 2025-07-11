@@ -36,7 +36,6 @@ export function ProductListClient({ initialProducts }: ProductListClientProps) {
 
     const onProductCreated = (newProduct: Product) => {
         setProducts(prev => [newProduct, ...prev]);
-        // The dialog now handles the redirect, so no action is needed here.
     }
 
     const onProductDeleted = (deletedProductId: string) => {
@@ -133,4 +132,3 @@ export function ProductListClient({ initialProducts }: ProductListClientProps) {
         </div>
     );
 }
-

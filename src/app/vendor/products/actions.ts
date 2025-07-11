@@ -57,6 +57,64 @@ export async function saveProduct(formData: FormData) {
   
   const { id, ...productData } = validation.data;
 
+  // Handle case for a new product first
+  if (!id) {
+    // 1. Insert product without image to get an ID
+    const initialProductData = {
+        ...productData,
+        vendor_id: verifiedVendorId,
+        sizes: productData.sizes ? productData.sizes.split(',').map(s => s.trim()).filter(Boolean) : null,
+        colors: productData.colors ? productData.colors.split(',').map(c => c.trim()).filter(Boolean) : null,
+        updated_at: new Date().toISOString(),
+    };
+    
+    const { data: newProduct, error: insertError } = await supabase
+        .from('products')
+        .insert(initialProductData)
+        .select()
+        .single();
+    
+    if (insertError) {
+        console.error('Error creating product record:', insertError);
+        return { success: false, error: `Could not create product record: ${insertError.message}` };
+    }
+
+    const imageFile = formData.get('image') as File | null;
+    if (imageFile && imageFile.size > 0) {
+      // 2. Upload image using the new product's ID
+      const filePath = `${verifiedVendorId}/${newProduct.id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
+      const { error: uploadError } = await supabase.storage.from('product-images').upload(filePath, imageFile);
+
+      if (uploadError) {
+          console.error('Error uploading product image:', uploadError);
+          // Return success but with a warning, as the product itself was created.
+          return { success: true, data: newProduct, error: 'Product created, but image upload failed.' };
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(filePath);
+      
+      // 3. Update the product with the image URL
+      const { data: updatedProduct, error: updateError } = await supabase
+        .from('products')
+        .update({ image: publicUrl, updated_at: new Date().toISOString() })
+        .eq('id', newProduct.id)
+        .select()
+        .single();
+        
+      if (updateError) {
+          console.error('Error updating product with image URL:', updateError);
+          return { success: true, data: newProduct, error: 'Product created, but failed to link image.' };
+      }
+      revalidatePath('/vendor/products');
+      return { success: true, data: updatedProduct };
+    }
+    
+    revalidatePath('/vendor/products');
+    return { success: true, data: newProduct };
+  }
+
+
+  // Logic for updating an existing product
   const imageFile = formData.get('image') as File | null;
   let imageUrl: string | null = formData.get('existingImageUrl') as string | null;
 
@@ -71,14 +129,14 @@ export async function saveProduct(formData: FormData) {
           if (!fetchError && existingProduct?.image) {
             try {
                 const url = new URL(existingProduct.image);
-                oldImagePath = decodeURIComponent(url.pathname.split('/product-images/')[1]);
+                oldImagePath = url.pathname.split(`/storage/v1/object/public/product-images/`)[1];
             } catch (e) {
                 console.error("Could not parse old product image URL", e);
             }
           }
       }
 
-      const filePath = `${user.id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
+      const filePath = `${verifiedVendorId}/${id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
       const { error: uploadError } = await supabase.storage
           .from('product-images')
           .upload(filePath, imageFile);
@@ -91,7 +149,7 @@ export async function saveProduct(formData: FormData) {
       const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(filePath);
       imageUrl = publicUrl;
 
-      if (oldImagePath && oldImagePath.startsWith(user.id)) {
+      if (oldImagePath && oldImagePath.startsWith(verifiedVendorId)) {
         const { error: deleteError } = await supabase.storage.from('product-images').remove([oldImagePath]);
         if(deleteError) {
             console.error("Failed to delete old product image, but continuing.", deleteError);
@@ -145,7 +203,7 @@ export async function deleteProduct(productId: string) {
 
     const { data: product } = await supabase
       .from('products')
-      .select('id, image, vendors ( id, user_id )')
+      .select('id, image, vendor_id, vendors ( id, user_id )')
       .eq('id', productId)
       .single();
 
@@ -170,8 +228,8 @@ export async function deleteProduct(productId: string) {
     if (product.image) {
         try {
             const url = new URL(product.image);
-            const path = decodeURIComponent(url.pathname.split('/product-images/')[1]);
-            if(path && path.startsWith(user.id)) {
+            const path = url.pathname.split(`/storage/v1/object/public/product-images/`)[1];
+            if(path && path.startsWith(product.vendor_id)) {
                 await supabase.storage.from('product-images').remove([path]);
             }
         } catch (e) {
