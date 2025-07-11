@@ -10,7 +10,7 @@ const keyId = "rzp_test_jvsIRxawUh4gGu";
 const keySecret = "4Ym5sw2c52FJUN7R2iNsxQ1a";
 
 if (!keyId || !keySecret) {
-    console.warn("Razorpay keys are not configured. Payment will not work.");
+    //
 }
 
 const razorpayInstance = new Razorpay({
@@ -50,7 +50,6 @@ export async function createRazorpayOrder({ amountInPaise, plan }: CreateOrderPa
         const order = await razorpayInstance.orders.create(options);
         return order;
     } catch (error) {
-        console.error("Error creating Razorpay order:", error);
         return null;
     }
 }
@@ -90,7 +89,6 @@ export async function verifyPaymentAndUpdateProfile({ orderId, paymentId, signat
             .eq('id', user.id);
 
         if (error) {
-            console.error('Error updating profile:', error);
             return { success: false, error: 'Failed to update your subscription status.' };
         }
 

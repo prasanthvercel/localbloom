@@ -3,9 +3,11 @@ import { redirect } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { ShopForm } from './ShopForm';
 import type { Vendor } from '@/types';
+import { cookies } from 'next/headers';
 
 export default async function ShopSettingsPage() {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
 
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -20,7 +22,7 @@ export default async function ShopSettingsPage() {
     .single();
 
   if (error && error.code !== 'PGRST116') { // PGRST116: row not found
-    console.error('Error fetching vendor profile:', error);
+    // Don't log error in production
   }
 
   return (

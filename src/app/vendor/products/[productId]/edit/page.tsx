@@ -9,7 +9,7 @@ import { ProductEditForm } from './ProductEditForm';
 
 async function getProductAndVendor(productId: string, userId: string) {
     const cookieStore = cookies();
-    const supabase = createClient();
+    const supabase = createClient(cookieStore);
 
     const { data: productData, error: productError } = await supabase
         .from('products')
@@ -19,8 +19,7 @@ async function getProductAndVendor(productId: string, userId: string) {
         .single();
     
     if (productError || !productData) {
-        console.error("Error fetching product or unauthorized access:", productError);
-        return { product: null, vendor: null };
+        notFound();
     }
 
     const { vendors: vendorData, ...product } = productData;
@@ -30,7 +29,8 @@ async function getProductAndVendor(productId: string, userId: string) {
 
 
 export default async function EditProductPage({ params }: { params: { productId: string } }) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
 
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -53,4 +53,3 @@ export default async function EditProductPage({ params }: { params: { productId:
     </div>
   );
 }
-

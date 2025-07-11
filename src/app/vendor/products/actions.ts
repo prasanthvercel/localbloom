@@ -33,7 +33,6 @@ export async function saveProduct(formData: FormData) {
     .single();
 
   if (vendorError || !vendorData) {
-      console.error('Vendor not found for user:', user.id, vendorError);
       return { success: false, error: 'Could not find your vendor profile. Please ensure your shop is set up before adding products.' };
   }
   const verifiedVendorId = vendorData.id;
@@ -75,7 +74,6 @@ export async function saveProduct(formData: FormData) {
         .single();
     
     if (insertError) {
-        console.error('Error creating product record:', insertError);
         return { success: false, error: `Could not create product record: ${insertError.message}` };
     }
 
@@ -86,7 +84,6 @@ export async function saveProduct(formData: FormData) {
       const { error: uploadError } = await supabase.storage.from('product-images').upload(filePath, imageFile);
 
       if (uploadError) {
-          console.error('Error uploading product image:', uploadError);
           // Return success but with a warning, as the product itself was created.
           return { success: true, data: newProduct, error: 'Product created, but image upload failed.' };
       }
@@ -102,7 +99,6 @@ export async function saveProduct(formData: FormData) {
         .single();
         
       if (updateError) {
-          console.error('Error updating product with image URL:', updateError);
           return { success: true, data: newProduct, error: 'Product created, but failed to link image.' };
       }
       revalidatePath('/vendor/products');
@@ -131,7 +127,7 @@ export async function saveProduct(formData: FormData) {
                 const url = new URL(existingProduct.image);
                 oldImagePath = url.pathname.split(`/storage/v1/object/public/product-images/`)[1];
             } catch (e) {
-                console.error("Could not parse old product image URL", e);
+                // Could not parse old product image URL, ignore
             }
           }
       }
@@ -142,7 +138,6 @@ export async function saveProduct(formData: FormData) {
           .upload(filePath, imageFile);
 
       if (uploadError) {
-          console.error('Error uploading product image:', uploadError);
           return { success: false, error: `Could not upload image: ${uploadError.message}` };
       }
 
@@ -152,7 +147,7 @@ export async function saveProduct(formData: FormData) {
       if (oldImagePath && oldImagePath.startsWith(verifiedVendorId)) {
         const { error: deleteError } = await supabase.storage.from('product-images').remove([oldImagePath]);
         if(deleteError) {
-            console.error("Failed to delete old product image, but continuing.", deleteError);
+            // Failed to delete old product image, but continuing.
         }
       }
   }
@@ -174,14 +169,13 @@ export async function saveProduct(formData: FormData) {
     .single();
 
   if (error) {
-    console.error('Error saving product:', error);
     if (imageUrl && imageUrl !== (formData.get('existingImageUrl') as string | null)) {
         try {
             const url = new URL(imageUrl);
             const pathToDelete = url.pathname.split('/product-images/')[1];
             if (pathToDelete) await supabase.storage.from('product-images').remove([pathToDelete]);
         } catch (e) {
-            console.error("Failed to clean up orphaned image after DB error", e);
+            // Failed to clean up orphaned image after DB error
         }
     }
     return { success: false, error: `Could not save product: ${error.message}` };
@@ -221,7 +215,6 @@ export async function deleteProduct(productId: string) {
       .eq('id', productId);
     
     if (deleteDbError) {
-        console.error('Error deleting product from DB:', deleteDbError);
         return { success: false, error: `Could not delete product: ${deleteDbError.message}` };
     }
 
@@ -233,7 +226,7 @@ export async function deleteProduct(productId: string) {
                 await supabase.storage.from('product-images').remove([path]);
             }
         } catch (e) {
-            console.error("Could not parse image URL or delete from storage, but DB record was deleted.", e);
+            // Could not parse image URL or delete from storage, but DB record was deleted.
         }
     }
     

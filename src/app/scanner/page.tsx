@@ -133,7 +133,6 @@ export default function ScannerPage() {
          toast({ variant: 'destructive', title: 'Analysis Failed', description: "We couldn't identify the item in the image. Please try a clearer picture." });
       }
     } catch (error) {
-      console.error('Error analyzing image:', error);
       toast({ variant: 'destructive', title: 'Analysis Failed', description: error instanceof Error ? error.message : 'Could not analyze the image. Please try again.' });
     } finally {
       setIsLoading(false);

@@ -36,7 +36,6 @@ export async function updateExpense(
     .single();
 
   if (error) {
-    console.error('Error updating expense:', error);
     return { success: false, error: 'Could not update expense. Please try again.' };
   }
 

@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow to analyze a product image and find it in the marketplace.
@@ -125,7 +126,6 @@ const analyzeProductImageFlow = ai.defineFlow(
           .single();
 
         if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = row not found
-            console.error('Could not retrieve user profile:', fetchError);
             // Don't throw, just proceed without profile data
         }
         profile = userProfile;
@@ -166,7 +166,6 @@ const analyzeProductImageFlow = ai.defineFlow(
             
             if (updateError) {
                 // Log the error but don't fail the whole flow. The user got their analysis.
-                console.error('Failed to update scan count:', updateError);
             }
         }
 
@@ -178,7 +177,6 @@ const analyzeProductImageFlow = ai.defineFlow(
             .limit(3);
 
         if (productsError) {
-            console.error('Error searching for products:', productsError);
             // Don't fail the flow, just return an empty array
         }
 

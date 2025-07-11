@@ -3,6 +3,7 @@ import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { ProductResults } from '@/components/products/ProductResults';
 import type { ProductWithVendor, ShoppingListItem } from '@/types';
 import { type ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies';
+import { cookies } from 'next/headers';
 
 async function getProducts(supabase: ReturnType<typeof createClient>, category?: string, query?: string): Promise<ProductWithVendor[]> {
   const lowercasedQuery = query?.toLowerCase().trim() ?? '';
@@ -27,7 +28,6 @@ async function getProducts(supabase: ReturnType<typeof createClient>, category?:
   const { data: productsData, error } = await productQuery.order('price', { ascending: true });
 
   if (error || !productsData) {
-    console.error('Error fetching products:', error);
     return [];
   }
 
@@ -56,7 +56,8 @@ export default async function ProductsPage({
 }: {
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
-  const supabase = createClient();
+  const cookieStore = cookies()
+  const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
   const category = typeof searchParams.category === 'string' ? searchParams.category : undefined;

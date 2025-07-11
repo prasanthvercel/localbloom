@@ -4,9 +4,11 @@ import { redirect } from 'next/navigation';
 import { Header } from '@/components/Header';
 import type { Product } from '@/types';
 import { ProductListClient } from './ProductListClient';
+import { cookies } from 'next/headers';
 
 export default async function VendorProductsPage() {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
 
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -22,7 +24,6 @@ export default async function VendorProductsPage() {
     .single();
 
   if (vendorError || !vendor) {
-    console.error('Vendor not found, redirecting to shop setup.');
     redirect('/vendor/shop');
   }
   
@@ -34,7 +35,6 @@ export default async function VendorProductsPage() {
     .order('created_at', { ascending: false });
 
   if (productsError) {
-    console.error('Error fetching products:', productsError);
     // Don't redirect, just show an empty list
   }
   

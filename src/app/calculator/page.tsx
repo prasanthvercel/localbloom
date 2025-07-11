@@ -3,9 +3,11 @@ import { redirect } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { ExpenseTracker } from '@/components/calculator/ExpenseTracker';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { cookies } from 'next/headers';
 
 export default async function CalculatorPage() {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
 
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -30,7 +32,6 @@ export default async function CalculatorPage() {
     .order('created_at', { ascending: false });
 
   if (error && error.code !== 'PGRST116') { // PGRST116: row not found
-    console.error('Error fetching expenses:', error.message);
     // Continue with an empty array if there's an error
   }
   

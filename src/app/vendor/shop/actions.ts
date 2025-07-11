@@ -44,7 +44,6 @@ export async function updateShopDetails(formData: FormData) {
           .upload(filePath, imageFile);
 
       if (uploadError) {
-          console.error('Error uploading shop image:', uploadError);
           return { success: false, error: `Could not upload image: ${uploadError.message}` };
       }
       
@@ -60,7 +59,7 @@ export async function updateShopDetails(formData: FormData) {
                 await supabase.storage.from('shop-images').remove([path]);
             }
         } catch (e) {
-            console.error("Could not parse or delete old shop image", e);
+            // Could not parse or delete old shop image
         }
       }
   }
@@ -79,7 +78,6 @@ export async function updateShopDetails(formData: FormData) {
   });
 
   if (error) {
-    console.error('Error updating shop details:', error);
     return { success: false, error: `Could not update shop details: ${error.message}` };
   }
 
