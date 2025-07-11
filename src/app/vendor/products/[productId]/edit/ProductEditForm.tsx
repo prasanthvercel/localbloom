@@ -187,4 +187,3 @@ export function ProductEditForm({ product }: ProductEditFormProps) {
         </div>
     );
 }
-
