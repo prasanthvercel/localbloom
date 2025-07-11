@@ -12,8 +12,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 async function getProductDetails(productId: string) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   
   const { data: productData, error } = await supabase
     .from('products')
@@ -43,8 +42,7 @@ async function getProductDetails(productId: string) {
 async function getRelatedProducts(currentProduct: Product, currentVendor: Vendor) {
   if (!currentVendor?.category) return [];
 
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   
   // Find other vendors in the same category
   const { data: vendorsInCategory, error: vendorError } = await supabase
@@ -101,8 +99,7 @@ export default async function ProductDetailPage({ params }: { params: { productI
   const { product, vendor } = details;
   const relatedProducts = await getRelatedProducts(product, vendor);
 
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   return (

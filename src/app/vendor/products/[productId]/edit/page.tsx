@@ -9,7 +9,7 @@ import { ProductEditForm } from './ProductEditForm';
 
 async function getProductAndVendor(productId: string, userId: string) {
     const cookieStore = cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = createClient();
 
     const { data: productData, error: productError } = await supabase
         .from('products')
@@ -30,8 +30,7 @@ async function getProductAndVendor(productId: string, userId: string) {
 
 
 export default async function EditProductPage({ params }: { params: { productId: string } }) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
 

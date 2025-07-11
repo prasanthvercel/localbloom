@@ -1,3 +1,4 @@
+
 import { DashboardPage } from '@/components/DashboardPage';
 import { createClient } from '@/lib/supabase/server';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -17,7 +18,7 @@ export default async function Home() {
   // Fetch vendors and categories for the customer dashboard
   const { data: featuredVendors } = await supabase
     .from('vendors')
-    .select('*')
+    .select('*, products(*)')
     .limit(3);
 
   const { data: allVendors } = await supabase.from('vendors').select('category');

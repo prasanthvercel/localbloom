@@ -2,11 +2,9 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { AccountForm } from '@/components/account/AccountForm';
 import { Header } from '@/components/Header';
-import { cookies } from 'next/headers';
 
 export default async function AccountPage() {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
 

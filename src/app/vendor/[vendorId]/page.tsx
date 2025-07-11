@@ -30,8 +30,7 @@ export async function generateStaticParams() {
 }
 
 async function getVendor(vendorId: string): Promise<Vendor | null> {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   const { data: vendor, error } = await supabase
     .from('vendors')
     .select('*, products(*)')

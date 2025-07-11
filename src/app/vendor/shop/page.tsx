@@ -3,11 +3,9 @@ import { redirect } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { ShopForm } from './ShopForm';
 import type { Vendor } from '@/types';
-import { cookies } from 'next/headers';
 
 export default async function ShopSettingsPage() {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
 
